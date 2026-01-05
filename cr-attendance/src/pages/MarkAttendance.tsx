@@ -179,7 +179,14 @@ export const MarkAttendance: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                    <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-700" />
+                    <Input
+                        type="date"
+                        value={date}
+                        min={new Date().toISOString().split('T')[0]}
+                        max={new Date().toISOString().split('T')[0]}
+                        onChange={e => setDate(e.target.value)}
+                        className="bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                    />
                     <div className="relative">
                         <select
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg h-10 bg-gray-50 dark:bg-gray-800 dark:text-white appearance-none"

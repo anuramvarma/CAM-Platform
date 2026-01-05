@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const classSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true }, // One class per CR for now
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Creator of the class
     yearOfStudy: { type: Number, required: true }, // 1, 2, 3, 4
     admissionYear: { type: String, required: true }, // e.g., '23'
     collegeCode: { type: String, required: true }, // e.g. 'PA'

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 import { Layout } from './components/Layout';
 import { SetupWizard } from './components/SetupWizard';
 
@@ -44,9 +45,11 @@ function App() {
     return (
         <AppProvider>
             <ThemeProvider>
-                <BrowserRouter>
-                    <AppRoutes />
-                </BrowserRouter>
+                <ToastProvider>
+                    <BrowserRouter>
+                        <AppRoutes />
+                    </BrowserRouter>
+                </ToastProvider>
             </ThemeProvider>
         </AppProvider>
     );

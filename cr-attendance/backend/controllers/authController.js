@@ -102,3 +102,33 @@ exports.changePassword = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.checkEmail = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (user) {
+            return res.status(200).json({ exists: true });
+        } else {
+            return res.status(404).json({ exists: false, message: 'Email not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.resetPasswordNew = async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

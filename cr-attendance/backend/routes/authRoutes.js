@@ -10,4 +10,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.get('/me', authMiddleware, authController.getProfile);
 router.post('/change-password', authMiddleware, authController.changePassword);
 
+// Forgot Password
+router.post('/check-email', authController.checkEmail);
+router.post('/reset-password', authController.resetPasswordNew);
+
 module.exports = router;

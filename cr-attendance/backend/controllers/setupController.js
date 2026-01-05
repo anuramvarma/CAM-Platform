@@ -84,74 +84,109 @@ const generateRolls = (start, end) => {
 };
 
 exports.setupClass = async (req, res) => {
-    console.log('🛠️ Setup Request:', req.body);
+    console.log('🛠️ Setup Request Body:', req.body);
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const { yearOfStudy, admissionYear, startRoll, endRoll, collegeCode, lateralDetails, degree, dept, section } = req.body;
+        let { yearOfStudy, admissionYear, startRoll, endRoll, collegeCode, lateralDetails, degree, dept, section } = req.body;
         const userId = req.user.userId;
 
-        // 1. Check if already configured
-        // REMOVED FOR DEBUGGING: Allow re-setup to fix empty classes
-        const existingClass = await Class.findOne({ userId }).session(session);
+        // --- STRICT Normalization (Uppercase Everything) ---
+        // This ensures both Search and Save use the EXACT same format.
+        const cCode = collegeCode ? collegeCode.trim().toUpperCase() : '';
+        const cDegree = degree ? degree.trim().toUpperCase() : 'B.TECH';
+        const cDept = dept ? dept.trim().toUpperCase() : '';
+        const cSection = section ? section.trim().toUpperCase() : '';
+        const cAdmissionYear = admissionYear ? admissionYear.trim() : '';
+        const cYearOfStudy = parseInt(yearOfStudy, 10);
+
+        // Debug Log
+        const query = {
+            collegeCode: cCode,
+            degree: cDegree,
+            dept: cDept,
+            section: cSection,
+            yearOfStudy: cYearOfStudy,
+            admissionYear: cAdmissionYear
+        };
+        console.log('🔍 Lookup Query:', JSON.stringify(query));
+
+        // 1. Check if a CLASS with these details ALREADY EXISTS
+        // We look for an EXACT match on the normalized fields.
+        const existingClass = await Class.findOne(query).session(session);
+
+        let targetClassId;
+
         if (existingClass) {
-            console.log('⚠️ Re-setup detected. Cleaning up old class:', existingClass._id);
-            // Delete existing students if re-running setup to avoid duplicates
-            await Student.deleteMany({ classId: existingClass._id }).session(session);
-            await Class.findByIdAndDelete(existingClass._id).session(session);
-        }
+            console.log('🔗 Found existing class. Linking user to class:', existingClass._id);
+            // DO NOT Create new class.
+            // DO NOT Generate students.
+            // Just Link.
+            targetClassId = existingClass._id;
+        } else {
+            console.log('✨ No existing class found. Creating new class...');
 
-        // 2. Create Class
-        const newClass = new Class({
-            userId,
-            yearOfStudy,
-            admissionYear,
-            collegeCode,
-            degree,
-            dept,
-            section,
-            startRoll,
-            endRoll,
-            lateralDetails
-        });
-
-        const savedClass = await newClass.save({ session });
-        console.log('✅ Class Created:', savedClass._id);
-
-        // 3. Generate Students
-        const regularRolls = generateRolls(startRoll, endRoll);
-        console.log(`📊 Generated ${regularRolls.length} Regular Rolls`);
-
-        const studentsToInsert = regularRolls.map(roll => ({
-            classId: savedClass._id,
-            rollNumber: roll,
-            type: 'REGULAR'
-        }));
-
-        if (lateralDetails && lateralDetails.enabled) {
-            const lateralRolls = generateRolls(lateralDetails.startRoll, lateralDetails.endRoll);
-            console.log(`📊 Generated ${lateralRolls.length} Lateral Rolls`);
-            lateralRolls.forEach(roll => {
-                studentsToInsert.push({
-                    classId: savedClass._id,
-                    rollNumber: roll,
-                    type: 'LATERAL'
-                });
+            // 2. Create Class
+            // We save standardized UPPERCASE values to keep DB clean
+            const newClass = new Class({
+                userId, // Creator of this record
+                yearOfStudy: cYearOfStudy,
+                admissionYear: cAdmissionYear,
+                collegeCode: cCode,
+                degree: cDegree,
+                dept: cDept,
+                section: cSection,
+                startRoll: startRoll ? startRoll.trim().toUpperCase() : '',
+                endRoll: endRoll ? endRoll.trim().toUpperCase() : '',
+                lateralDetails
             });
+
+            // Normalize Lateral if exists
+            if (newClass.lateralDetails) {
+                if (newClass.lateralDetails.startRoll) newClass.lateralDetails.startRoll = newClass.lateralDetails.startRoll.toUpperCase();
+                if (newClass.lateralDetails.endRoll) newClass.lateralDetails.endRoll = newClass.lateralDetails.endRoll.toUpperCase();
+            }
+
+            const savedClass = await newClass.save({ session });
+            targetClassId = savedClass._id;
+            console.log('✅ Class Created:', targetClassId);
+
+            // 3. Generate Students
+            const regularRolls = generateRolls(startRoll, endRoll);
+            console.log(`📊 Generated ${regularRolls.length} Regular Rolls`);
+
+            const studentsToInsert = regularRolls.map(roll => ({
+                classId: targetClassId,
+                rollNumber: roll,
+                type: 'REGULAR'
+            }));
+
+            if (lateralDetails && lateralDetails.enabled) {
+                const lateralRolls = generateRolls(lateralDetails.startRoll, lateralDetails.endRoll);
+                console.log(`📊 Generated ${lateralRolls.length} Lateral Rolls`);
+                lateralRolls.forEach(roll => {
+                    studentsToInsert.push({
+                        classId: targetClassId,
+                        rollNumber: roll,
+                        type: 'LATERAL'
+                    });
+                });
+            }
+
+            if (studentsToInsert.length === 0) {
+                console.warn('⚠️ No students generated! Check Roll Inputs.');
+            }
+
+            await Student.insertMany(studentsToInsert, { session });
+            console.log(`✅ Saved ${studentsToInsert.length} Students to DB`);
         }
 
-        if (studentsToInsert.length === 0) {
-            console.warn('⚠️ No students generated! Check Roll Inputs.');
-        }
-
-        await Student.insertMany(studentsToInsert, { session });
-        console.log(`✅ Saved ${studentsToInsert.length} Students to DB`);
-
-        // 4. Update User
+        // 4. Update User (Link to Class)
+        // Note: We do not check for previous class here. User simply switches focus to this class.
         await User.findByIdAndUpdate(userId, {
             isSetupComplete: true,
-            classId: savedClass._id
+            classId: targetClassId
         }, { session });
 
         await session.commitTransaction();
@@ -159,15 +194,15 @@ exports.setupClass = async (req, res) => {
 
         // 5. Generate NEW Token with ClassID
         const newToken = jwt.sign(
-            { userId: userId, role: req.user.role, classId: savedClass._id },
+            { userId: userId, role: req.user.role, classId: targetClassId },
             process.env.JWT_SECRET
         );
 
         console.log('🔑 New Token Issued with ClassID');
 
         res.status(201).json({
-            message: 'Class setup successfully',
-            classId: savedClass._id,
+            message: existingClass ? 'Joined existing class successfully' : 'Class setup successfully',
+            classId: targetClassId,
             token: newToken // Return the new token
         });
 

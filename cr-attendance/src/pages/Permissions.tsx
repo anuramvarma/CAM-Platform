@@ -3,8 +3,9 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Trash2, Calendar, Edit2,Info, Users, Copy } from 'lucide-react';
+import { Trash2, Calendar, Edit2, Info, Users, Copy } from 'lucide-react';
 import { Permission } from '../types';
+import { useToast } from '../context/ToastContext';
 
 interface PermissionGroup {
     key: string;
@@ -19,6 +20,7 @@ interface PermissionGroup {
 
 export const Permissions: React.FC = () => {
     const { permissions, addPermission, updatePermission, deletePermission, students } = useApp();
+    const { showToast } = useToast();
 
     // UI State
     const [activeTab, setActiveTab] = useState<'CREATE' | 'VIEW'>('CREATE');
@@ -173,14 +175,14 @@ export const Permissions: React.FC = () => {
                         ...payloadBase
                     });
                 }
-                alert(`Permissions processed for ${selectedRolls.length} students.`);
+                showToast(`Permissions processed for ${selectedRolls.length} students.`, 'success');
             }
 
             resetForm();
             setActiveTab('VIEW');
         } catch (error: any) {
             console.error('Save failed:', error);
-            alert('Failed to save permission: ' + (error.message || error.error || 'Unknown error'));
+            showToast('Failed to save permission: ' + (error.message || error.error || 'Unknown error'), 'error');
         }
     };
 
@@ -190,6 +192,7 @@ export const Permissions: React.FC = () => {
         for (const perm of group.permissions) {
             await deletePermission(perm.id);
         }
+        showToast('Permission group deleted successfully', 'success');
         setViewingGroup(null);
     };
 
@@ -478,7 +481,7 @@ export const Permissions: React.FC = () => {
                                     onClick={() => {
                                         const details = `Permission Details\n\nFrom ${viewingGroup.startDate} to ${viewingGroup.endDate}\n${viewingGroup.type}\nReason : ${viewingGroup.reason}\nAllowed Periods\n${viewingGroup.type === 'CUSTOM' ? viewingGroup.customPeriods.join(' ') : '1 2 3 4 5 6 7 8'}\n\nStudents\n${viewingGroup.permissions.map(p => p.studentRoll).join(', ')}`;
                                         navigator.clipboard.writeText(details);
-                                        alert('Copied details to clipboard');
+                                        showToast('Copied details to clipboard', 'info');
                                     }}
                                     className="flex-1 text-xs"
                                 >
