@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card } from './ui/Card';
-import { Lock, Mail } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { api } from '../services/api';
 
 export const Login: React.FC = () => {
