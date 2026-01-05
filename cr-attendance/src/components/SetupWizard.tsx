@@ -8,7 +8,6 @@ export const SetupWizard: React.FC = () => {
     const { completeSetup } = useApp();
     const [loading, setLoading] = useState(false);
 
-    // Form Data matching Backend Schema
     const [formData, setFormData] = useState({
         degree: 'B.Tech',
         dept: 'CSE',
@@ -43,20 +42,34 @@ export const SetupWizard: React.FC = () => {
         }
     };
 
+    const selectClass =
+        "w-full border rounded p-2 bg-white text-gray-900 " +
+        "dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 " +
+        "focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400";
+
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-lg p-6">
-                <h1 className="text-2xl font-bold mb-6">Class Setup</h1>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+            <Card className="w-full max-w-lg p-6 bg-white dark:bg-gray-900">
+                <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+                    Class Setup
+                </h1>
 
                 <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-700">Basic Info</h3>
+                    <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+                        Basic Info
+                    </h3>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-700">Year of Study</label>
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Year of Study
+                            </label>
                             <select
-                                className="w-full border rounded p-2"
+                                className={selectClass}
                                 value={formData.yearOfStudy}
-                                onChange={e => setFormData({ ...formData, yearOfStudy: e.target.value })}
+                                onChange={e =>
+                                    setFormData({ ...formData, yearOfStudy: e.target.value })
+                                }
                             >
                                 <option value="1">1st Year</option>
                                 <option value="2">2nd Year</option>
@@ -66,11 +79,15 @@ export const SetupWizard: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-700">Degree</label>
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Degree
+                            </label>
                             <select
-                                className="w-full border rounded p-2"
+                                className={selectClass}
                                 value={formData.degree}
-                                onChange={e => setFormData({ ...formData, degree: e.target.value })}
+                                onChange={e =>
+                                    setFormData({ ...formData, degree: e.target.value })
+                                }
                             >
                                 <option value="B.Tech">B.Tech</option>
                                 <option value="M.Tech">M.Tech</option>
@@ -78,11 +95,15 @@ export const SetupWizard: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-700">Department</label>
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Department
+                            </label>
                             <select
-                                className="w-full border rounded p-2"
+                                className={selectClass}
                                 value={formData.dept}
-                                onChange={e => setFormData({ ...formData, dept: e.target.value })}
+                                onChange={e =>
+                                    setFormData({ ...formData, dept: e.target.value })
+                                }
                             >
                                 <option value="CSE">CSE</option>
                                 <option value="ECE">ECE</option>
@@ -96,11 +117,15 @@ export const SetupWizard: React.FC = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-gray-700">Section</label>
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Section
+                            </label>
                             <select
-                                className="w-full border rounded p-2"
+                                className={selectClass}
                                 value={formData.section}
-                                onChange={e => setFormData({ ...formData, section: e.target.value })}
+                                onChange={e =>
+                                    setFormData({ ...formData, section: e.target.value })
+                                }
                             >
                                 <option value="A">A</option>
                                 <option value="B">B</option>
@@ -108,44 +133,61 @@ export const SetupWizard: React.FC = () => {
                                 <option value="D">D</option>
                             </select>
                         </div>
+
                         <Input
                             label="Admission Batch (YY)"
                             value={formData.admissionYear}
-                            onChange={e => setFormData({ ...formData, admissionYear: e.target.value })}
+                            onChange={e =>
+                                setFormData({ ...formData, admissionYear: e.target.value })
+                            }
                         />
+
                         <Input
                             label="College Code"
                             value={formData.collegeCode}
-                            onChange={e => setFormData({ ...formData, collegeCode: e.target.value })}
+                            onChange={e =>
+                                setFormData({ ...formData, collegeCode: e.target.value })
+                            }
                         />
                     </div>
 
-                    <h3 className="font-semibold text-gray-700 mt-4">Regular Students</h3>
+                    <h3 className="font-semibold text-gray-700 dark:text-gray-300 mt-4">
+                        Regular Students
+                    </h3>
+
                     <div className="grid grid-cols-2 gap-4">
                         <Input
                             label="Start Roll No"
                             placeholder="23PA1A0501"
                             value={formData.startRoll}
-                            onChange={e => setFormData({ ...formData, startRoll: e.target.value })}
+                            onChange={e =>
+                                setFormData({ ...formData, startRoll: e.target.value })
+                            }
                         />
                         <Input
                             label="End Roll No"
                             placeholder="23PA1A0560"
                             value={formData.endRoll}
-                            onChange={e => setFormData({ ...formData, endRoll: e.target.value })}
+                            onChange={e =>
+                                setFormData({ ...formData, endRoll: e.target.value })
+                            }
                         />
                     </div>
 
                     {formData.yearOfStudy !== '1' && (
-                        <div className="mt-4 border-t pt-4">
+                        <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
                             <label className="flex items-center gap-2 mb-4 cursor-pointer">
                                 <input
                                     type="checkbox"
                                     checked={formData.lateralDetails.enabled}
-                                    onChange={e => updateLateral('enabled', e.target.checked)}
-                                    className="w-4 h-4"
+                                    onChange={e =>
+                                        updateLateral('enabled', e.target.checked)
+                                    }
+                                    className="w-4 h-4 accent-primary-600"
                                 />
-                                <span className="font-medium text-gray-800">Include Lateral Entry Students?</span>
+                                <span className="font-medium text-gray-800 dark:text-gray-200">
+                                    Include Lateral Entry Students?
+                                </span>
                             </label>
 
                             {formData.lateralDetails.enabled && (
@@ -154,20 +196,28 @@ export const SetupWizard: React.FC = () => {
                                         label="Lateral Start Roll"
                                         placeholder="24PA5A0501"
                                         value={formData.lateralDetails.startRoll}
-                                        onChange={e => updateLateral('startRoll', e.target.value)}
+                                        onChange={e =>
+                                            updateLateral('startRoll', e.target.value)
+                                        }
                                     />
                                     <Input
                                         label="Lateral End Roll"
                                         placeholder="24PA5A0510"
                                         value={formData.lateralDetails.endRoll}
-                                        onChange={e => updateLateral('endRoll', e.target.value)}
+                                        onChange={e =>
+                                            updateLateral('endRoll', e.target.value)
+                                        }
                                     />
                                 </div>
                             )}
                         </div>
                     )}
 
-                    <Button onClick={handleSubmit} className="w-full mt-6" disabled={loading}>
+                    <Button
+                        onClick={handleSubmit}
+                        className="w-full mt-6"
+                        disabled={loading}
+                    >
                         {loading ? 'Setting up...' : 'Complete Setup'}
                     </Button>
                 </div>
