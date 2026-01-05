@@ -24,6 +24,17 @@ app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => res.send('CR Attendance Backend Running'));
 
+// JSON 404 for API
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ message: 'API Route Not Found' });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('🔥 Global Error:', err.stack);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+});
+
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB Connected'))
     .catch(err => console.error('❌ DB Connection Error:', err));

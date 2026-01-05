@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Trash2, Calendar, Edit2, Info, Users, Copy } from 'lucide-react';
+import { Trash2, Calendar, Edit2, Info, Users, Copy, RefreshCw } from 'lucide-react';
 import { Permission } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -19,13 +19,20 @@ interface PermissionGroup {
 }
 
 export const Permissions: React.FC = () => {
-    const { permissions, addPermission, updatePermission, deletePermission, students } = useApp();
+    const { permissions, addPermission, updatePermission, deletePermission, students, fetchData } = useApp();
     const { showToast } = useToast();
 
     // UI State
     const [activeTab, setActiveTab] = useState<'CREATE' | 'VIEW'>('CREATE');
     // const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
     const [viewingGroup, setViewingGroup] = useState<PermissionGroup | null>(null); // For Popup
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await fetchData();
+        setTimeout(() => setIsRefreshing(false), 500);
+    };
 
     // Edit State: If non-null, we are editing this existing group of permissions
     const [editingOriginals, setEditingOriginals] = useState<Permission[] | null>(null);
@@ -200,6 +207,10 @@ export const Permissions: React.FC = () => {
         <div className="space-y-6 pb-20 relative">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Permissions</h1>
+                <Button onClick={handleRefresh} variant="ghost" size="sm" disabled={isRefreshing}>
+                    <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''} mr-2`} />
+                    Refresh
+                </Button>
             </div>
 
             {/* Tabs */}
@@ -372,7 +383,9 @@ export const Permissions: React.FC = () => {
                             </div>
                             <h3 className="text-lg font-medium text-gray-900 dark:text-white">No active permissions currently</h3>
                             <p className="text-gray-500 dark:text-gray-400">Create one to see it here.</p>
-                            <Button variant="secondary" className="mt-4" onClick={() => setActiveTab('CREATE')}>Create Permission</Button>
+                            <div className="flex justify-center mt-4">
+                                <Button variant="secondary" onClick={() => setActiveTab('CREATE')}>Create Permission</Button>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

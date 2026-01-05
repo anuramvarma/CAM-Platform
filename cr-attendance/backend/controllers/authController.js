@@ -39,10 +39,18 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Email not found' });
         }
 
+
         const validPass = await bcrypt.compare(password, user.password);
         if (!validPass) {
             console.warn('⚠️ Login Failed: Invalid password', email);
             return res.status(400).json({ message: 'Invalid password' });
+        }
+
+        // Feature: Expiring Credentials
+        if (user.expiresAt && new Date() > new Date(user.expiresAt)) {
+            console.warn('⚠️ Login Failed: Credential Expired', email);
+            await User.deleteOne({ _id: user._id }); // Cleanup expired user
+            return res.status(403).json({ message: 'These credentials have expired.' });
         }
 
         console.log('✅ Login Success:', email);
@@ -56,7 +64,7 @@ exports.login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user._id, role: user.role, classId: classId },
+            { userId: user._id, role: user.role, classId: classId, isApproved: user.isApproved },
             process.env.JWT_SECRET
         );
 
@@ -64,7 +72,8 @@ exports.login = async (req, res) => {
             token,
             userId: user._id,
             classConfigured: user.isSetupComplete,
-            classId: classId
+            classId: classId,
+            isApproved: user.isApproved
         });
     } catch (err) {
         res.status(500).json({ error: err.message });

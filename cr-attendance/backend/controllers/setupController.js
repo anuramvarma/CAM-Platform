@@ -183,10 +183,13 @@ exports.setupClass = async (req, res) => {
         }
 
         // 4. Update User (Link to Class)
-        // Note: We do not check for previous class here. User simply switches focus to this class.
+        // If joining, NOT approved. If creating, APPROVED.
+        const isApproved = !existingClass;
+
         await User.findByIdAndUpdate(userId, {
+            classId: targetClassId,
             isSetupComplete: true,
-            classId: targetClassId
+            isApproved: isApproved
         }, { session });
 
         await session.commitTransaction();
@@ -194,15 +197,16 @@ exports.setupClass = async (req, res) => {
 
         // 5. Generate NEW Token with ClassID
         const newToken = jwt.sign(
-            { userId: userId, role: req.user.role, classId: targetClassId },
+            { userId: userId, role: req.user.role, classId: targetClassId, isApproved },
             process.env.JWT_SECRET
         );
 
-        console.log('🔑 New Token Issued with ClassID');
+        console.log('🔑 New Token Issued with ClassID', { isApproved });
 
         res.status(201).json({
-            message: existingClass ? 'Joined existing class successfully' : 'Class setup successfully',
+            message: existingClass ? 'Joined existing class successfully. Please wait for CR1 approval.' : 'Class setup successfully',
             classId: targetClassId,
+            isApproved,
             token: newToken // Return the new token
         });
 

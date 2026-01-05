@@ -26,8 +26,9 @@ interface AppContextType {
     deletePermission: (id: string) => Promise<void>;
     markAttendance: (record: AttendanceRecord) => Promise<void>;
 
-    // Loaders
+
     fetchData: () => Promise<void>;
+    checkApprovalStatus: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -45,10 +46,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     useEffect(() => {
         const token = localStorage.getItem('token');
         const setupState = localStorage.getItem('setupComplete') === 'true';
+        const approvedState = localStorage.getItem('isApproved') === 'true';
         if (token) {
             setIsAuthenticated(true);
-            setSettings({ isSetupComplete: setupState });
-            fetchData();
+            setSettings({ isSetupComplete: setupState, isApproved: approvedState });
+            if (setupState && approvedState) {
+                fetchData();
+            }
         }
     }, []);
 
@@ -69,15 +73,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     };
 
+    const checkApprovalStatus = async () => {
+        try {
+            const user = await api.auth.getProfile();
+            // Update storage and state
+            localStorage.setItem('isApproved', String(!!user.isApproved));
+            setSettings(prev => ({ ...prev, isApproved: !!user.isApproved }));
+
+            if (user.isApproved) {
+                // If now approved, valid setup, fetch data
+                fetchData();
+            }
+        } catch (err) {
+            console.error('Failed to check approval status', err);
+        }
+    };
+
     const login = async (creds: any) => {
         const res = await api.auth.login(creds);
         localStorage.setItem('token', res.token);
         localStorage.setItem('setupComplete', res.classConfigured);
+        localStorage.setItem('isApproved', String(!!res.isApproved));
 
         setIsAuthenticated(true);
-        setSettings({ isSetupComplete: res.classConfigured });
+        setSettings({ isSetupComplete: res.classConfigured, isApproved: !!res.isApproved });
 
-        if (res.classConfigured) {
+        if (res.classConfigured && res.isApproved) {
             fetchData();
         }
     };
@@ -85,16 +106,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('setupComplete');
+        localStorage.removeItem('isApproved');
         setIsAuthenticated(false);
         setStudents([]);
         setSubjects([]);
         setPermissions([]);
+        setHistory([]);
     };
 
     const resetApp = async () => {
-        // Placeholder for reset functionality if backend supports it, otherwise just local logout/clear
-        // Ideally this should call a backend endpoint to wipe data if that's the intention
-        // For now, mirroring logout but deeper clean if needed
         logout();
     };
 
@@ -104,15 +124,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Critical: Update token with new permissions (classId)
         if (res.token) {
             localStorage.setItem('token', res.token);
-            // If using axios interceptors, update defaults here. 
-            // Since we read from localStorage in api.ts helper, this should be enough for next specific calls.
         }
 
         localStorage.setItem('setupComplete', 'true');
-        setSettings({ isSetupComplete: true });
+        localStorage.setItem('isApproved', String(!!res.isApproved));
+
+        setSettings({ isSetupComplete: true, isApproved: !!res.isApproved });
 
         // Slight delay to ensure token persistence before fetch
-        setTimeout(() => fetchData(), 100);
+        if (res.isApproved) {
+            setTimeout(() => fetchData(), 100);
+        }
     };
 
     const addSubject = async (name: string, code?: string) => {
@@ -188,7 +210,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             updatePermission,
             deletePermission,
             markAttendance,
-            fetchData
+            fetchData,
+            checkApprovalStatus
         }}>
             {children}
         </AppContext.Provider>

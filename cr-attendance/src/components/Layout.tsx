@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-    Menu, X, Home, BookOpen, Users, Calendar, Clock, LogOut, User, Moon, Sun
+    Menu, X, Home, BookOpen, Users, Calendar, Clock, LogOut, User, Moon, Sun, MoreHorizontal
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ProfileModal } from './ProfileModal';
@@ -21,6 +21,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         { label: 'Manage Students', path: '/students', icon: Users },
         { label: 'Manage Permissions', path: '/permissions', icon: Calendar },
         { label: 'History', path: '/history', icon: Clock },
+        { label: 'Misc', path: '/misc', icon: MoreHorizontal },
     ];
 
     const handleLogout = () => logout();
@@ -36,15 +37,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
             {/* Mobile Header */}
             <div className="lg:hidden fixed top-0 w-full bg-indigo-600 dark:bg-gray-900 text-white z-50 px-4 py-3 flex items-center justify-between shadow-md">
-                <h1 className="font-bold text-lg">CR Attendance</h1>
                 <div className="flex items-center gap-3">
-                    <button onClick={toggleTheme}>
-                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                    </button>
                     <button onClick={() => setSidebarOpen(true)}>
                         <Menu size={24} />
                     </button>
+                    <h1 className="font-bold text-lg">CR Attendance</h1>
                 </div>
+                <button onClick={toggleTheme}>
+                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
             </div>
 
             {/* Sidebar Overlay */}

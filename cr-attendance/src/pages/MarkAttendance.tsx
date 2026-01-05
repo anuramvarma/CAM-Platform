@@ -183,7 +183,6 @@ export const MarkAttendance: React.FC = () => {
                         type="date"
                         value={date}
                         min={new Date().toISOString().split('T')[0]}
-                        max={new Date().toISOString().split('T')[0]}
                         onChange={e => setDate(e.target.value)}
                         className="bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-700"
                     />

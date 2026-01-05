@@ -15,6 +15,9 @@ import { Permissions } from './pages/Permissions';
 import { History } from './pages/History';
 import { MarkAttendance } from './pages/MarkAttendance';
 
+import { PendingApproval } from './components/PendingApproval';
+import { Misc } from './pages/Misc';
+
 const AppRoutes = () => {
     const { settings, isAuthenticated } = useApp();
 
@@ -26,6 +29,10 @@ const AppRoutes = () => {
         return <SetupWizard />;
     }
 
+    if (settings.isApproved === false) { // Explicitly check false, undefined might mean legacy/dev
+        return <PendingApproval />;
+    }
+
     return (
         <Layout>
             <Routes>
@@ -35,6 +42,7 @@ const AppRoutes = () => {
                 <Route path="/permissions" element={<Permissions />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/mark" element={<MarkAttendance />} />
+                <Route path="/misc" element={<Misc />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </Layout>

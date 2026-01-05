@@ -36,5 +36,6 @@ export interface AppSettings {
     collegeCode?: string; // e.g., PA
     branchCode?: string; // e.g., 05 (CSE) -- implicit in roll
     isSetupComplete: boolean;
+    isApproved?: boolean;
     pin?: string;
 }

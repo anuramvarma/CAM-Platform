@@ -34,4 +34,13 @@ router.post('/permissions', permissionController.addPermission);
 router.put('/permissions/:id', permissionController.updatePermission);
 router.delete('/permissions/:id', permissionController.deletePermission);
 
+// Misc (User Approvals)
+const miscController = require('../controllers/miscController');
+console.log('✅ miscController exports:', Object.keys(miscController));
+
+router.get('/misc/requests', miscController.getPendingRequests);
+router.post('/misc/approve', miscController.approveUser);
+router.post('/misc/reject', miscController.rejectUser);
+router.post('/misc/guest', miscController.createGuest);
+
 module.exports = router;

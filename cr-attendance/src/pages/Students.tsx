@@ -3,13 +3,14 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Trash2, Search, UserPlus } from 'lucide-react';
+import { Trash2, Search, UserPlus, RefreshCw } from 'lucide-react';
 /* import { Student } from '../types'; // Unused */
 
 export const Students: React.FC = () => {
-    const { students, addStudent, deleteStudent } = useApp();
+    const { students, addStudent, deleteStudent, fetchData } = useApp();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // New student form state
     const [newRoll, setNewRoll] = useState('');
@@ -33,6 +34,12 @@ export const Students: React.FC = () => {
         }
     };
 
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await fetchData();
+        setTimeout(() => setIsRefreshing(false), 500);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -40,10 +47,16 @@ export const Students: React.FC = () => {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Students</h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{students.length} Students Enrolled</p>
                 </div>
-                <Button onClick={() => setIsAdding(!isAdding)} variant="secondary">
-                    <UserPlus size={18} />
-                    {isAdding ? 'Cancel' : 'Add Student'}
-                </Button>
+                <div className="flex gap-2">
+                    <Button onClick={handleRefresh} variant="ghost" disabled={isRefreshing}>
+                        <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''} mr-2`} />
+                        Refresh
+                    </Button>
+                    <Button onClick={() => setIsAdding(!isAdding)} variant="secondary">
+                        <UserPlus size={18} className="mr-2" />
+                        {isAdding ? 'Cancel' : 'Add Student'}
+                    </Button>
+                </div>
             </div>
 
             {isAdding && (

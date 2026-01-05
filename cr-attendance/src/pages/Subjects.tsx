@@ -3,11 +3,12 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, RefreshCw } from 'lucide-react';
 
 export const Subjects: React.FC = () => {
-    const { subjects, addSubject, deleteSubject } = useApp();
+    const { subjects, addSubject, deleteSubject, fetchData } = useApp();
     const [newSubject, setNewSubject] = useState('');
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const handleAdd = (e: React.FormEvent) => {
         e.preventDefault();
@@ -17,11 +18,23 @@ export const Subjects: React.FC = () => {
         }
     };
 
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        await fetchData();
+        setTimeout(() => setIsRefreshing(false), 500);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Subjects</h1>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{subjects.length} Total</span>
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Subjects</h1>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{subjects.length} Total</span>
+                </div>
+                <Button onClick={handleRefresh} variant="ghost" size="sm" disabled={isRefreshing}>
+                    <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''} mr-2`} />
+                    Refresh
+                </Button>
             </div>
 
             <Card className="p-4 bg-gray-50 dark:bg-gray-900 border-dashed border-gray-200 dark:border-gray-800">

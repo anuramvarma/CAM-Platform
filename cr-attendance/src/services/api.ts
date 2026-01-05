@@ -167,5 +167,40 @@ export const api = {
             if (!res.ok) throw await res.json();
             return res.json(); // Or handle as needed, e.g., no return for successful delete
         }
+    },
+
+    misc: {
+        getRequests: async () => {
+            const res = await fetch(`${API_URL}/misc/requests`, { headers: getHeaders() });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        approve: async (targetUserId: string) => {
+            const res = await fetch(`${API_URL}/misc/approve`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ targetUserId })
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        reject: async (targetUserId: string) => {
+            const res = await fetch(`${API_URL}/misc/reject`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ targetUserId })
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        createGuest: async (data: any) => {
+            const res = await fetch(`${API_URL}/misc/guest`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        }
     }
 };
