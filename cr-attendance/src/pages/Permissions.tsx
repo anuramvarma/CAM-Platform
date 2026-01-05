@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Trash2, Calendar, Edit2, X, Info, Users, Copy } from 'lucide-react';
+import { Trash2, Calendar, Edit2,Info, Users, Copy } from 'lucide-react';
 import { Permission } from '../types';
 
 interface PermissionGroup {
