@@ -400,7 +400,7 @@ export const Permissions: React.FC = () => {
                             <div className="flex-1 flex flex-col">
                                 <textarea
                                     className="flex-1 w-full p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
-                                    placeholder="Enter Roll Numbers separated by commas (e.g., 20PA1A0501, 20PA1A0502)..."
+                                    placeholder="Enter Roll Numbers separated by commas (e.g., 23PA1A05C8, 23PA1A05C9)..."
                                     value={manualEntry}
                                     onChange={handleManualChange}
                                 />
