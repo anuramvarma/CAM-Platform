@@ -25,7 +25,7 @@ app.use('/api', apiRoutes);
 app.get('/', (req, res) => res.send('CR Attendance Backend Running'));
 
 // JSON 404 for API
-app.use('/api/*', (req, res) => {
+app.use('/api', (req, res) => {
     res.status(404).json({ message: 'API Route Not Found' });
 });
 

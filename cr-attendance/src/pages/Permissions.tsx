@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Trash2, Calendar, Edit2, Info, Users, Copy, RefreshCw } from 'lucide-react';
+import { Trash2, Calendar, Edit2, Info, Users, Copy, RefreshCw, ListChecks, Type } from 'lucide-react';
 import { Permission } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -47,6 +47,8 @@ export const Permissions: React.FC = () => {
     // Multi-Select Students State
     const [selectedRolls, setSelectedRolls] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectionMode, setSelectionMode] = useState<'LIST' | 'MANUAL'>('LIST');
+    const [manualEntry, setManualEntry] = useState('');
 
     const filteredStudents = students.filter(s =>
         s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())
@@ -94,6 +96,7 @@ export const Permissions: React.FC = () => {
         // Pre-select all students in this group
         const rolls = group.permissions.map(p => p.studentRoll);
         setSelectedRolls(rolls);
+        setManualEntry(rolls.join(', '));
 
         setEditingOriginals(group.permissions);
         setActiveTab('CREATE');
@@ -119,6 +122,7 @@ export const Permissions: React.FC = () => {
 
     const clearSelection = () => {
         setSelectedRolls([]);
+        setManualEntry('');
     };
 
     const resetForm = () => {
@@ -128,7 +132,24 @@ export const Permissions: React.FC = () => {
         setType('FULL_DAY');
         setCustomPeriods([]);
         setSelectedRolls([]);
+        setManualEntry('');
         setEditingOriginals(null);
+    };
+
+    const handleModeSwitch = (mode: 'LIST' | 'MANUAL') => {
+        if (mode === 'MANUAL') {
+            setManualEntry(selectedRolls.join(', '));
+        }
+        setSelectionMode(mode);
+    };
+
+    const handleManualChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const val = e.target.value;
+        setManualEntry(val);
+        const rolls = val.split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+        setSelectedRolls(rolls);
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -312,55 +333,82 @@ export const Permissions: React.FC = () => {
                     {/* Right Column: Student Selection */}
                     <Card className="p-6 lg:col-span-2 flex flex-col h-[600px]">
                         <div className="flex justify-between items-center border-b pb-2 mb-4">
-                            <h3 className="font-semibold text-lg">Select Students ({selectedRolls.length})</h3>
+                            <h3 className="font-semibold text-lg">Select Students ({new Set(selectedRolls).size})</h3>
                             <div className="flex gap-2">
-                                <button onClick={selectAllFiltered} className="text-xs text-indigo-600 hover:underline">Select All</button>
+                                {selectionMode === 'LIST' && <button onClick={selectAllFiltered} className="text-xs text-indigo-600 hover:underline">Select All</button>}
                                 <span className="text-gray-300">|</span>
                                 <button onClick={clearSelection} className="text-xs text-red-500 hover:underline">Clear</button>
                             </div>
                         </div>
 
-                        <div className="mb-4">
-                            <Input
-                                placeholder="Search Roll Number..."
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                            />
+                        {/* Toggle Mode */}
+                        <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-4">
+                            <button
+                                onClick={() => handleModeSwitch('LIST')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-semibold rounded-md transition-all ${selectionMode === 'LIST' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}
+                            >
+                                <ListChecks size={14} /> From List
+                            </button>
+                            <button
+                                onClick={() => handleModeSwitch('MANUAL')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-semibold rounded-md transition-all ${selectionMode === 'MANUAL' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`}
+                            >
+                                <Type size={14} /> Manual Entry
+                            </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-                            {filteredStudents.length === 0 ? (
-                                <p className="text-center text-gray-400 py-10">No students found..</p>
-                            ) : (
-                                filteredStudents.map(s => {
-                                    const isSelected = selectedRolls.includes(s.rollNumber);
-
-                                    return (
-                                        <label
-                                            key={s.id}
-                                            className={`
-            flex items-center justify-between px-4 py-3 cursor-pointer
-            transition
-            ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}
-          `}
-                                        >
-                                            {/* Roll Number (LEFT) */}
-                                            <span className={`font-mono text-sm ${isSelected ? 'font-semibold text-indigo-800 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                {s.rollNumber}
-                                            </span>
-
-                                            {/* Checkbox (RIGHT) */}
-                                            <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={() => toggleStudent(s.rollNumber)}
-                                                className="w-4 h-4 accent-indigo-600"
-                                            />
-                                        </label>
-                                    );
-                                })
-                            )}
-                        </div>
+                        {selectionMode === 'LIST' ? (
+                            <>
+                                <div className="mb-4">
+                                    <Input
+                                        placeholder="Search Roll Number..."
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <div className="flex-1 overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-lg bg-gray-50 dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+                                    {filteredStudents.length === 0 ? (
+                                        <p className="text-center text-gray-400 py-10">No students found..</p>
+                                    ) : (
+                                        filteredStudents.map(s => {
+                                            const isSelected = selectedRolls.includes(s.rollNumber);
+                                            return (
+                                                <label
+                                                    key={s.id}
+                                                    className={`
+                                                        flex items-center justify-between px-4 py-3 cursor-pointer
+                                                        transition
+                                                        ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}
+                                                    `}
+                                                >
+                                                    <span className={`font-mono text-sm ${isSelected ? 'font-semibold text-indigo-800 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                        {s.rollNumber}
+                                                    </span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => toggleStudent(s.rollNumber)}
+                                                        className="w-4 h-4 accent-indigo-600"
+                                                    />
+                                                </label>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex-1 flex flex-col">
+                                <textarea
+                                    className="flex-1 w-full p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+                                    placeholder="Enter Roll Numbers separated by commas (e.g., 20PA1A0501, 20PA1A0502)..."
+                                    value={manualEntry}
+                                    onChange={handleManualChange}
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Values are automatically synced. You can paste a comma-separated list here.
+                                </p>
+                            </div>
+                        )}
 
 
 
