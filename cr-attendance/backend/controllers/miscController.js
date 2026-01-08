@@ -67,8 +67,11 @@ exports.createGuest = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + parseInt(expiresInHours));
+        let expiresAt = null;
+        if (parseInt(expiresInHours) !== -1) {
+            expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + parseInt(expiresInHours));
+        }
 
         const newUser = new User({
             email,
@@ -85,6 +88,40 @@ exports.createGuest = async (req, res) => {
         res.status(201).json({ message: 'Guest credentials created successfully' });
     } catch (err) {
         console.error('Create Guest Error:', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+exports.getClassUsers = async (req, res) => {
+    try {
+        const { classId } = req.user;
+        if (!classId) return res.status(400).json({ message: 'No Class ID found' });
+
+        const users = await User.find({
+            classId: classId,
+            isApproved: true,
+            _id: { $ne: req.user.userId }
+        }).select('email role createdAt expiresAt');
+
+        res.json(users);
+    } catch (err) {
+        console.error('Get Class Users Error:', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+exports.deleteUser = async (req, res) => {
+    try {
+        const { targetUserId } = req.params;
+        const { classId } = req.user;
+
+        const userToDelete = await User.findOne({ _id: targetUserId, classId });
+        if (!userToDelete) return res.status(404).json({ message: 'User not found or not in your class' });
+
+        await User.findByIdAndDelete(targetUserId);
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        console.error('Delete User Error:', err);
         res.status(500).json({ message: 'Server Error' });
     }
 };

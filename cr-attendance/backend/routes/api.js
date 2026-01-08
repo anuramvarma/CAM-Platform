@@ -43,5 +43,7 @@ router.get('/misc/requests', miscController.getPendingRequests);
 router.post('/misc/approve', miscController.approveUser);
 router.post('/misc/reject', miscController.rejectUser);
 router.post('/misc/guest', miscController.createGuest);
+router.get('/misc/users', miscController.getClassUsers);
+router.delete('/misc/users/:targetUserId', miscController.deleteUser);
 
 module.exports = router;

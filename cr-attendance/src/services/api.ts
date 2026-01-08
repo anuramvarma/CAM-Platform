@@ -1,4 +1,4 @@
-const API_URL = 'https://cam-platform.onrender.com/api';
+const API_URL = 'http://localhost:5000/api';
 
 const getHeaders = () => {
     const token = localStorage.getItem('token');
@@ -203,6 +203,19 @@ export const api = {
                 method: 'POST',
                 headers: getHeaders(),
                 body: JSON.stringify(data)
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        getClassUsers: async () => {
+            const res = await fetch(`${API_URL}/misc/users`, { headers: getHeaders() });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        deleteUser: async (id: string) => {
+            const res = await fetch(`${API_URL}/misc/users/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
             });
             if (!res.ok) throw await res.json();
             return await res.json();

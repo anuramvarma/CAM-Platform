@@ -54,11 +54,28 @@ export const Permissions: React.FC = () => {
         s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // Date Filter State
+    const [filterDate, setFilterDate] = useState('');
+
     // --- GROUPING LOGIC ---
     const groupedPermissions = useMemo(() => {
         const groups: Record<string, PermissionGroup> = {};
 
+        // If filter date is active, check if it falls within range
+        const targetDate = filterDate ? new Date(filterDate) : null;
+        if (targetDate) targetDate.setHours(0, 0, 0, 0);
+
         permissions.forEach(perm => {
+            // Date filtering
+            if (targetDate) {
+                const start = new Date(perm.startDate);
+                const end = new Date(perm.endDate);
+                start.setHours(0, 0, 0, 0);
+                end.setHours(0, 0, 0, 0);
+
+                if (targetDate < start || targetDate > end) return;
+            }
+
             // Create a unique key for the "Event"
             const key = `${perm.startDate}|${perm.endDate}|${perm.type}|${perm.reason}|${(perm.customPeriods || []).sort().join(',')}`;
 
@@ -82,7 +99,7 @@ export const Permissions: React.FC = () => {
         return Object.values(groups).sort((a, b) =>
             new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
         );
-    }, [permissions]);
+    }, [permissions, filterDate]);
 
     // --- ACTIONS ---
 
@@ -203,7 +220,7 @@ export const Permissions: React.FC = () => {
                         ...payloadBase
                     });
                 }
-                showToast(`Permissions processed for ${selectedRolls.length} students.`, 'success');
+                showToast(`Permissions updated for ${selectedRolls.length} students.`, 'success');
             }
 
             resetForm();
@@ -220,7 +237,7 @@ export const Permissions: React.FC = () => {
         for (const perm of group.permissions) {
             await deletePermission(perm.id);
         }
-        showToast('Permission group deleted successfully', 'success');
+        showToast('Permissions deleted successfully', 'success');
         setViewingGroup(null);
     };
 
@@ -240,7 +257,7 @@ export const Permissions: React.FC = () => {
                     onClick={() => { setActiveTab('CREATE'); resetForm(); }}
                     className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${activeTab === 'CREATE' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 >
-                    {editingOriginals ? 'Edit Event' : 'Create Permission'}
+                    {editingOriginals ? 'Edit Information' : 'Create Permission'}
                 </button>
                 <button
                     onClick={() => { setActiveTab('VIEW'); setEditingOriginals(null); }}
@@ -436,44 +453,63 @@ export const Permissions: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {groupedPermissions.map(group => {
-                                const isRange = group.startDate !== group.endDate;
-                                let typeLabel = group.type.replace('_', ' ');
-                                if (group.type === 'CUSTOM' && group.customPeriods?.length) {
-                                    typeLabel = `P: ${group.customPeriods.join(',')}`;
-                                }
+                        <>
+                            <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                                <div className="flex-1">
+                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Filter by Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                                        value={filterDate}
+                                        onChange={(e) => setFilterDate(e.target.value)}
+                                    />
+                                </div>
+                                {filterDate && (
+                                    <Button variant="ghost" size="sm" onClick={() => setFilterDate('')} className="text-red-500 h-[42px] mt-5">
+                                        Clear
+                                    </Button>
+                                )}
+                            </div>
 
-                                return (
-                                    <div
-                                        key={group.key}
-                                        onClick={() => setViewingGroup(group)}
-                                        className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all cursor-pointer group relative overflow-hidden"
-                                    >
-                                        <div className="bg-indigo-50 dark:bg-indigo-900/30 w-full absolute top-0 left-0 h-1" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {groupedPermissions.map(group => {
+                                    const isRange = group.startDate !== group.endDate;
+                                    let typeLabel = group.type.replace('_', ' ');
+                                    if (group.type === 'CUSTOM' && group.customPeriods?.length) {
+                                        typeLabel = `P: ${group.customPeriods.join(',')}`;
+                                    }
 
-                                        <div className="flex justify-between items-start mb-2 mt-1">
-                                            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 line-clamp-1" title={group.reason}>{group.reason}</h3>
-                                            <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide shrink-0 ${group.type === 'CUSTOM' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
-                                                {typeLabel}
-                                            </span>
-                                        </div>
+                                    return (
+                                        <div
+                                            key={group.key}
+                                            onClick={() => setViewingGroup(group)}
+                                            className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all cursor-pointer group relative overflow-hidden"
+                                        >
+                                            <div className="bg-indigo-50 dark:bg-indigo-900/30 w-full absolute top-0 left-0 h-1" />
 
-                                        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
-                                                <span className="font-medium text-gray-700 dark:text-gray-300">{group.startDate} {isRange && `➔ ${group.endDate}`}</span>
+                                            <div className="flex justify-between items-start mb-2 mt-1">
+                                                <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 line-clamp-1" title={group.reason}>{group.reason}</h3>
+                                                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide shrink-0 ${group.type === 'CUSTOM' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
+                                                    {typeLabel}
+                                                </span>
                                             </div>
-                                            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
-                                                <Users size={14} className="text-indigo-500 dark:text-indigo-400" />
-                                                <span className="font-semibold text-indigo-700 dark:text-indigo-400">{group.studentCount} Students</span>
-                                                <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">Click for more details</span>
+
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar size={14} className="text-gray-400 dark:text-gray-500" />
+                                                    <span className="font-medium text-gray-700 dark:text-gray-300">{group.startDate} {isRange && `➔ ${group.endDate}`}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-100 dark:border-gray-700">
+                                                    <Users size={14} className="text-indigo-500 dark:text-indigo-400" />
+                                                    <span className="font-semibold text-indigo-700 dark:text-indigo-400">{group.studentCount} Students</span>
+                                                    <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">Click for more details</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
                     )}
                 </div>
             )}
