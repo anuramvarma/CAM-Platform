@@ -64,7 +64,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 api.subjects.getAll(),
                 api.permissions.getAll(),
                 api.attendance.history(),
-                api.class.get().catch(e => null)
+                api.class.get().catch(() => null)
             ]);
             setStudents(sts);
             setSubjects(subs);
