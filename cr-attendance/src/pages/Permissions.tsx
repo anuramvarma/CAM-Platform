@@ -18,6 +18,25 @@ interface PermissionGroup {
     studentCount: number;
 }
 
+
+const getAllowedPeriods = (
+  type: string,
+  customPeriods: number[] = []
+): number[] => {
+  switch (type) {
+    case 'FULL_DAY':
+      return [1, 2, 3, 4, 5, 6, 7, 8];
+    case 'MORNING':
+      return [1, 2, 3, 4];
+    case 'AFTERNOON':
+      return [5, 6, 7, 8];
+    case 'CUSTOM':
+      return customPeriods;
+    default:
+      return [];
+  }
+};
+
 export const Permissions: React.FC = () => {
     const { permissions, addPermission, updatePermission, deletePermission, students, fetchData } = useApp();
     const { showToast } = useToast();
@@ -547,10 +566,10 @@ export const Permissions: React.FC = () => {
                             <div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Allowed Periods</div>
                                 <div className="text-gray-900 dark:text-gray-100 font-mono text-lg tracking-widest">
-                                    {viewingGroup.type === 'CUSTOM'
-                                        ? viewingGroup.customPeriods.join(' ')
-                                        : [1, 2, 3, 4, 5, 6, 7, 8].join(' ')
-                                    }
+                                    {getAllowedPeriods(
+  viewingGroup.type,
+  viewingGroup.customPeriods
+).join(' ')}
                                 </div>
                             </div>
 
