@@ -414,7 +414,7 @@ export const Permissions: React.FC = () => {
 
                         <div className="mt-4 pt-2 border-t">
                             <Button onClick={handleSave} className={`w-full text-lg h-12 shadow-lg ${editingOriginals ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600'}`}>
-                                {editingOriginals ? 'Update Event & Students' : `Grant Permissions to ${selectedRolls.length} Students`}
+                                {editingOriginals ? 'Update Event & Students' : `Set Permissions to ${selectedRolls.length} Students`}
                             </Button>
                         </div>
                     </Card>
@@ -540,9 +540,31 @@ export const Permissions: React.FC = () => {
                                 <Button
                                     variant="secondary"
                                     onClick={() => {
-                                        const details = `Permission Details\n\nFrom ${viewingGroup.startDate} to ${viewingGroup.endDate}\n${viewingGroup.type}\nReason : ${viewingGroup.reason}\nAllowed Periods\n${viewingGroup.type === 'CUSTOM' ? viewingGroup.customPeriods.join(' ') : '1 2 3 4 5 6 7 8'}\n\nStudents\n${viewingGroup.permissions.map(p => p.studentRoll).join(', ')}`;
+                                        const regRolls: string[] = [];
+                                        const leRolls: string[] = [];
+
+                                        // Sort permissions by roll number
+                                        const sortedPerms = [...viewingGroup.permissions].sort((a, b) => a.studentRoll.localeCompare(b.studentRoll));
+
+                                        sortedPerms.forEach(p => {
+                                            const s = students.find(st => st.rollNumber === p.studentRoll);
+                                            const shortRoll = p.studentRoll.slice(-2);
+                                            if (s && s.type === 'LATERAL') leRolls.push(shortRoll);
+                                            else regRolls.push(shortRoll);
+                                        });
+
+                                        const formattedStart = viewingGroup.startDate.split('-').reverse().join('-');
+                                        const formattedEnd = viewingGroup.endDate.split('-').reverse().join('-');
+
+                                        const details = `Permissions details:
+From : ${formattedStart} to ${formattedEnd}
+Reason: ${viewingGroup.reason}
+
+Roll Numbers : ${regRolls.length ? regRolls.join(', ') + '.' : 'None.'}
+LE : ${leRolls.length ? leRolls.join(', ') + '.' : 'None.'}`;
+
                                         navigator.clipboard.writeText(details);
-                                        showToast('Copied details to clipboard', 'info');
+                                        showToast('Copied permission to clipboard', 'info');
                                     }}
                                     className="flex-1 text-xs"
                                 >

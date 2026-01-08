@@ -38,4 +38,5 @@ export interface AppSettings {
     isSetupComplete: boolean;
     isApproved?: boolean;
     pin?: string;
+    className?: string;
 }

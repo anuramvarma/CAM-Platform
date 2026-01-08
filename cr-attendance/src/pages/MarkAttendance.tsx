@@ -118,12 +118,12 @@ export const MarkAttendance: React.FC = () => {
 
         let summary = `Date: ${formattedDate}\nPeriod: ${period}\nSubject: ${subjectName}\n\n`;
 
-        summary += `Absentees : ${regulars.length > 0 ? regulars.join(',') : 'Nil'}.\n\n`;
+        summary += `Absentees : ${regulars.length > 0 ? regulars.join(', ') : 'No Absentees'}.\n\n`;
 
         if (laterals.length > 0) {
-            summary += `LE : ${laterals.join(',')}.`;
+            summary += `LE : ${laterals.join(', ')}.`;
         } else {
-            summary += `LE : Nil.`;
+            summary += `LE : No Absentees.`;
         }
 
         return summary;
@@ -342,7 +342,7 @@ export const MarkAttendance: React.FC = () => {
                         </div>
 
                         <div className="p-6 space-y-4 overflow-y-auto">
-                            <pre className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap border border-gray-200 dark:border-gray-700">
+                            <pre className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words border border-gray-200 dark:border-gray-700">
                                 {generateSummary()}
                             </pre>
 

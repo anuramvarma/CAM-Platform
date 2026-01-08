@@ -49,7 +49,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const approvedState = localStorage.getItem('isApproved') === 'true';
         if (token) {
             setIsAuthenticated(true);
-            setSettings({ isSetupComplete: setupState, isApproved: approvedState });
+            const className = localStorage.getItem('className') || undefined;
+            setSettings({ isSetupComplete: setupState, isApproved: approvedState, className });
             if (setupState && approvedState) {
                 fetchData();
             }
@@ -58,16 +59,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const fetchData = async () => {
         try {
-            const [sts, subs, perms, hist] = await Promise.all([
+            const [sts, subs, perms, hist, cls] = await Promise.all([
                 api.students.getAll(),
                 api.subjects.getAll(),
                 api.permissions.getAll(),
-                api.attendance.history()
+                api.attendance.history(),
+                api.class.get().catch(e => null)
             ]);
             setStudents(sts);
             setSubjects(subs);
             setPermissions(perms);
             setHistory(hist);
+
+            if (cls) {
+                const name = `${cls.dept}-${cls.section} Attendance Tracker`;
+                setSettings(prev => ({ ...prev, className: name }));
+                localStorage.setItem('className', name);
+            }
         } catch (err) {
             console.error('Failed to load data', err);
         }
@@ -96,7 +104,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('isApproved', String(!!res.isApproved));
 
         setIsAuthenticated(true);
-        setSettings({ isSetupComplete: res.classConfigured, isApproved: !!res.isApproved });
+        const className = localStorage.getItem('className') || undefined;
+        setSettings({ isSetupComplete: res.classConfigured, isApproved: !!res.isApproved, className });
 
         if (res.classConfigured && res.isApproved) {
             fetchData();
@@ -107,6 +116,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.removeItem('token');
         localStorage.removeItem('setupComplete');
         localStorage.removeItem('isApproved');
+        localStorage.removeItem('className');
         setIsAuthenticated(false);
         setStudents([]);
         setSubjects([]);

@@ -13,6 +13,7 @@ router.use(authMiddleware);
 
 // Setup
 router.post('/class/setup', setupController.setupClass);
+router.get('/class/me', setupController.getClassDetails);
 
 // Attendance
 router.post('/attendance', attendanceController.markAttendance);

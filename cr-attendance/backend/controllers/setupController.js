@@ -217,3 +217,17 @@ exports.setupClass = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.getClassDetails = async (req, res) => {
+    try {
+        const classId = req.user.classId;
+        if (!classId) return res.status(404).json({ message: 'No Class Linked' });
+
+        const classData = await Class.findById(classId);
+        if (!classData) return res.status(404).json({ message: 'Class Not Found' });
+
+        res.json(classData);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

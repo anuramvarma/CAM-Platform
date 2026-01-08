@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
-    const { logout, resetApp } = useApp();
+    const { logout, resetApp, settings } = useApp();
     const { theme, toggleTheme } = useTheme();
 
     const location = useLocation();
@@ -41,7 +41,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     <button onClick={() => setSidebarOpen(true)}>
                         <Menu size={24} />
                     </button>
-                    <h1 className="font-bold text-lg">CR Attendance</h1>
+                    <h1 className="font-bold text-lg">{settings.className || 'CR Attendance'}</h1>
                 </div>
                 <button onClick={toggleTheme}>
                     {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
@@ -68,8 +68,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 <div className="h-full flex flex-col">
                     {/* Logo */}
                     <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                            CR Admin
+                        <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                            {settings.className ? settings.className.split(' ')[0] + ' Admin' : 'CR Admin'}
                         </h2>
                         <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
                             <X size={20} className="text-gray-500 dark:text-gray-400" />
