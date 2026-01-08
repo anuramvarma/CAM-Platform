@@ -73,6 +73,11 @@ export const api = {
             });
             if (!res.ok) throw await res.json();
             return res.json();
+        },
+        get: async () => {
+            const res = await fetch(`${API_URL}/class/me`, { headers: getHeaders() });
+            if (!res.ok) throw await res.json();
+            return mapId(await res.json());
         }
     },
     students: {
