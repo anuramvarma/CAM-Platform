@@ -27,41 +27,50 @@ export const MarkAttendance: React.FC = () => {
 
     // Compute status on the fly
     const getStudentStatus = (roll: string): 'PRESENT' | 'ABSENT' | 'PERMISSION' => {
-        // 1. Check Permission
-        const student = students.find(s => s.rollNumber === roll);
-        if (!student) return 'PRESENT';
+  const activePerm = getActivePermission(
+    permissions,
+    roll,
+    date,
+    parseInt(period)
+  );
 
-        const activePerm = permissions.find(p => {
-            const pStart = new Date(p.startDate);
-            const pEnd = new Date(p.endDate);
-            const curr = new Date(date);
-            const isDateMatch = curr >= pStart && curr <= pEnd;
-            const isRollMatch = p.studentRoll === student.rollNumber;
+  if (activePerm) return 'PERMISSION';
 
-            const pNum = parseInt(period);
-            const isMorning = pNum <= 4;
+  const isSelected = selectedRolls.has(roll);
 
-            let isSessionMatch = true;
-            if (p.type === 'MORNING' && !isMorning) isSessionMatch = false;
-            if (p.type === 'AFTERNOON' && isMorning) isSessionMatch = false;
-            if (p.type === 'CUSTOM') {
-                if (!p.customPeriods?.includes(pNum)) isSessionMatch = false;
-            }
+  if (markingMode === 'MARK_ABSENTEES') {
+    return isSelected ? 'ABSENT' : 'PRESENT';
+  } else {
+    return isSelected ? 'PRESENT' : 'ABSENT';
+  }
+};
 
-            return isDateMatch && isRollMatch && isSessionMatch;
-        });
+const getActivePermission = (
+  permissions: any[],
+  studentRoll: string,
+  date: string,
+  period: number
+) => {
+  return permissions.find(p => {
+    const pStart = new Date(p.startDate);
+    const pEnd = new Date(p.endDate);
+    const curr = new Date(date);
 
-        if (activePerm) return 'PERMISSION';
+    const isDateMatch = curr >= pStart && curr <= pEnd;
+    const isRollMatch = p.studentRoll === studentRoll;
 
-        // 2. Check Selection
-        const isSelected = selectedRolls.has(roll);
+    const isMorning = period <= 4;
+    let isSessionMatch = true;
 
-        if (markingMode === 'MARK_ABSENTEES') {
-            return isSelected ? 'ABSENT' : 'PRESENT';
-        } else {
-            return isSelected ? 'PRESENT' : 'ABSENT';
-        }
-    };
+    if (p.type === 'MORNING' && !isMorning) isSessionMatch = false;
+    if (p.type === 'AFTERNOON' && isMorning) isSessionMatch = false;
+    if (p.type === 'CUSTOM' && !p.customPeriods?.includes(period)) {
+      isSessionMatch = false;
+    }
+
+    return isDateMatch && isRollMatch && isSessionMatch;
+  });
+};
 
     const toggleStatus = (roll: string) => {
         const currentStatus = getStudentStatus(roll);
@@ -255,11 +264,17 @@ export const MarkAttendance: React.FC = () => {
 
                         // Check for Permission Reason if locked
                         let permReason = '';
-                        if (isPerm) {
-                            const activePerm = permissions.find(p => p.studentRoll === student.rollNumber && new Date(date) >= new Date(p.startDate) && new Date(date) <= new Date(p.endDate));
-                            // Note: precise logic matches useEffect, simplified here for display lookup
-                            if (activePerm) permReason = activePerm.reason;
-                        }
+
+if (isPerm) {
+  const activePerm = getActivePermission(
+    permissions,
+    student.rollNumber,
+    date,
+    parseInt(period)
+  );
+
+  if (activePerm) permReason = activePerm.reason;
+}
 
                         // Active check based on mode
                         const isChecked = markingMode === 'MARK_ABSENTEES' ? isAbsent : isPresent;
