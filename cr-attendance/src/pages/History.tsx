@@ -31,12 +31,31 @@ export const History: React.FC = () => {
     const getShortRoll = (roll: string) => roll.slice(-2);
 
     const generateSummary = (record: any) => {
-        const subjectName = subjects.find(s => s.id === record.subjectId || (s as any)._id === record.subjectId)?.name || 'Unknown Subject';
-        const formattedDate = format(parseISO(record.date), 'dd-MM-yyyy');
-        const shortAbsentees = record.absentees.map(getShortRoll).sort();
+    const subjectName =
+        subjects.find(
+            s => s.id === record.subjectId || (s as any)._id === record.subjectId
+        )?.name || 'Unknown';
 
-        return `Date: ${formattedDate}\nPeriod: ${record.period}\nSubject: ${subjectName}\n\nAbsentees : ${shortAbsentees.length > 0 ? shortAbsentees.join(',') : 'Nil'}.`;
-    };
+    // ✅ Date format change
+    const formattedDate = format(parseISO(record.date), 'dd/MM/yyyy');
+
+    // ✅ Filter only valid roll numbers (remove numeric count if present)
+    const absentees = record.absentees
+        .filter((r: string) => isNaN(Number(r)))
+        .sort();
+
+    // ✅ LE count
+    const leCount = absentees.length;
+
+    return (
+`Date: ${formattedDate}
+Subject: ${subjectName}
+Period: ${record.period}
+
+Absentees: ${absentees.length > 0 ? absentees.join(', ') : 'Nil'}
+LE:${leCount}`
+    );
+};
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
