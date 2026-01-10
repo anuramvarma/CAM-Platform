@@ -31,36 +31,36 @@ export const History: React.FC = () => {
     const getShortRoll = (roll: string) => roll.slice(-2);
 
     const generateSummary = (record: any) => {
-    const subjectName =
-        subjects.find(
-            s => s.id === record.subjectId || (s as any)._id === record.subjectId
-        )?.name || 'Unknown';
+        const subjectName =
+            subjects.find(
+                s => s.id === record.subjectId || (s as any)._id === record.subjectId
+            )?.name || 'Unknown';
 
-    const formattedDate = format(parseISO(record.date), 'dd/MM/yyyy');
+        const formattedDate = format(parseISO(record.date), 'dd/MM/yyyy');
 
-    let leValue = '';
-    
-    const studentAbsentees = record.absentees
-        .filter((roll: string) => {
-            // ✅ LE roll starts with 24PA5A05 and ends with digits
-            if (/^24PA5A05\d+$/.test(roll)) {
-                leValue = roll.slice(-2); // extract 18 from 24PA5A0518
-                return false;
-            }
-            return true;
-        })
-        .map((roll: string) => roll.slice(-2)) // C9, D6...
-        .sort();
+        let leValue = '';
 
-    return (
-`Date: ${formattedDate}
+        const studentAbsentees = record.absentees
+            .filter((roll: string) => {
+                // ✅ LE roll starts with 24PA5A05 and ends with digits
+                if (/^24PA5A05\d+$/.test(roll)) {
+                    leValue = roll.slice(-2); // extract 18 from 24PA5A0518
+                    return false;
+                }
+                return true;
+            })
+            .map((roll: string) => roll.slice(-2)) // C9, D6...
+            .sort();
+
+        return (
+            `Date: ${formattedDate}
 Subject: ${subjectName}
 Period: ${record.period}
 
 Absentees: ${studentAbsentees.length ? studentAbsentees.join(', ') : 'Nil'}
 LE:${leValue || '0'}`
-    );
-};
+        );
+    };
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);

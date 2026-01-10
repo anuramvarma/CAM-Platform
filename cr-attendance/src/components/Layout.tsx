@@ -67,9 +67,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             >
                 <div className="h-full flex flex-col">
                     {/* Logo */}
-                    <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                         <h2 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                            {settings.className ? settings.className.split(' ')[0] + ' Admin' : 'CR Admin'}
+                            {
+                                settings.className
+                                    ? `VITB ${settings.className.split(' ')[0]}`
+                                    : ''
+                            }
                         </h2>
                         <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
                             <X size={20} className="text-gray-500 dark:text-gray-400" />

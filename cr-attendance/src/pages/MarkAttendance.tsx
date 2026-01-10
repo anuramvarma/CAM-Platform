@@ -27,50 +27,50 @@ export const MarkAttendance: React.FC = () => {
 
     // Compute status on the fly
     const getStudentStatus = (roll: string): 'PRESENT' | 'ABSENT' | 'PERMISSION' => {
-  const activePerm = getActivePermission(
-    permissions,
-    roll,
-    date,
-    parseInt(period)
-  );
+        const activePerm = getActivePermission(
+            permissions,
+            roll,
+            date,
+            parseInt(period)
+        );
 
-  if (activePerm) return 'PERMISSION';
+        if (activePerm) return 'PERMISSION';
 
-  const isSelected = selectedRolls.has(roll);
+        const isSelected = selectedRolls.has(roll);
 
-  if (markingMode === 'MARK_ABSENTEES') {
-    return isSelected ? 'ABSENT' : 'PRESENT';
-  } else {
-    return isSelected ? 'PRESENT' : 'ABSENT';
-  }
-};
+        if (markingMode === 'MARK_ABSENTEES') {
+            return isSelected ? 'ABSENT' : 'PRESENT';
+        } else {
+            return isSelected ? 'PRESENT' : 'ABSENT';
+        }
+    };
 
-const getActivePermission = (
-  permissions: any[],
-  studentRoll: string,
-  date: string,
-  period: number
-) => {
-  return permissions.find(p => {
-    const pStart = new Date(p.startDate);
-    const pEnd = new Date(p.endDate);
-    const curr = new Date(date);
+    const getActivePermission = (
+        permissions: any[],
+        studentRoll: string,
+        date: string,
+        period: number
+    ) => {
+        return permissions.find(p => {
+            const pStart = new Date(p.startDate);
+            const pEnd = new Date(p.endDate);
+            const curr = new Date(date);
 
-    const isDateMatch = curr >= pStart && curr <= pEnd;
-    const isRollMatch = p.studentRoll === studentRoll;
+            const isDateMatch = curr >= pStart && curr <= pEnd;
+            const isRollMatch = p.studentRoll === studentRoll;
 
-    const isMorning = period <= 4;
-    let isSessionMatch = true;
+            const isMorning = period <= 4;
+            let isSessionMatch = true;
 
-    if (p.type === 'MORNING' && !isMorning) isSessionMatch = false;
-    if (p.type === 'AFTERNOON' && isMorning) isSessionMatch = false;
-    if (p.type === 'CUSTOM' && !p.customPeriods?.includes(period)) {
-      isSessionMatch = false;
-    }
+            if (p.type === 'MORNING' && !isMorning) isSessionMatch = false;
+            if (p.type === 'AFTERNOON' && isMorning) isSessionMatch = false;
+            if (p.type === 'CUSTOM' && !p.customPeriods?.includes(period)) {
+                isSessionMatch = false;
+            }
 
-    return isDateMatch && isRollMatch && isSessionMatch;
-  });
-};
+            return isDateMatch && isRollMatch && isSessionMatch;
+        });
+    };
 
     const toggleStatus = (roll: string) => {
         const currentStatus = getStudentStatus(roll);
@@ -265,16 +265,16 @@ const getActivePermission = (
                         // Check for Permission Reason if locked
                         let permReason = '';
 
-if (isPerm) {
-  const activePerm = getActivePermission(
-    permissions,
-    student.rollNumber,
-    date,
-    parseInt(period)
-  );
+                        if (isPerm) {
+                            const activePerm = getActivePermission(
+                                permissions,
+                                student.rollNumber,
+                                date,
+                                parseInt(period)
+                            );
 
-  if (activePerm) permReason = activePerm.reason;
-}
+                            if (activePerm) permReason = activePerm.reason;
+                        }
 
                         // Active check based on mode
                         const isChecked = markingMode === 'MARK_ABSENTEES' ? isAbsent : isPresent;

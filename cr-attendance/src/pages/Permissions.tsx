@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -20,21 +20,21 @@ interface PermissionGroup {
 
 
 const getAllowedPeriods = (
-  type: string,
-  customPeriods: number[] = []
+    type: string,
+    customPeriods: number[] = []
 ): number[] => {
-  switch (type) {
-    case 'FULL_DAY':
-      return [1, 2, 3, 4, 5, 6, 7, 8];
-    case 'MORNING':
-      return [1, 2, 3, 4];
-    case 'AFTERNOON':
-      return [5, 6, 7, 8];
-    case 'CUSTOM':
-      return customPeriods;
-    default:
-      return [];
-  }
+    switch (type) {
+        case 'FULL_DAY':
+            return [1, 2, 3, 4, 5, 6, 7, 8];
+        case 'MORNING':
+            return [1, 2, 3, 4];
+        case 'AFTERNOON':
+            return [5, 6, 7, 8];
+        case 'CUSTOM':
+            return customPeriods;
+        default:
+            return [];
+    }
 };
 
 export const Permissions: React.FC = () => {
@@ -75,6 +75,16 @@ export const Permissions: React.FC = () => {
 
     // Date Filter State
     const [filterDate, setFilterDate] = useState('');
+
+    // Save Button Timer State
+    const [saveCountdown, setSaveCountdown] = useState(0);
+
+    useEffect(() => {
+        if (saveCountdown > 0) {
+            const timer = setTimeout(() => setSaveCountdown(prev => prev - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [saveCountdown]);
 
     // --- GROUPING LOGIC ---
     const groupedPermissions = useMemo(() => {
@@ -194,6 +204,12 @@ export const Permissions: React.FC = () => {
         if (selectedRolls.length === 0) return alert('Select at least one student');
         if (type === 'CUSTOM' && customPeriods.length === 0) return alert('Select at least one period for Custom type');
 
+
+
+        // Ack user and start timer
+        showToast('Saving permission to Database...', 'info');
+        setSaveCountdown(15);
+
         const payloadBase = { startDate, endDate, type, reason, customPeriods: type === 'CUSTOM' ? customPeriods : [] };
 
         try {
@@ -276,13 +292,13 @@ export const Permissions: React.FC = () => {
                     onClick={() => { setActiveTab('CREATE'); resetForm(); }}
                     className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${activeTab === 'CREATE' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 >
-                    {editingOriginals ? 'Edit Information' : 'Create Permission'}
+                    {editingOriginals ? 'Edit Information' : 'Create new Permission'}
                 </button>
                 <button
                     onClick={() => { setActiveTab('VIEW'); setEditingOriginals(null); }}
                     className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${activeTab === 'VIEW' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
                 >
-                    View Active
+                    Active Permissions
                 </button>
             </div>
 
@@ -449,8 +465,15 @@ export const Permissions: React.FC = () => {
 
 
                         <div className="mt-4 pt-2 border-t">
-                            <Button onClick={handleSave} className={`w-full text-lg h-12 shadow-lg ${editingOriginals ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600'}`}>
-                                {editingOriginals ? 'Update Event & Students' : `Set Permissions to ${selectedRolls.length} Students`}
+                            <Button
+                                onClick={handleSave}
+                                disabled={saveCountdown > 0}
+                                className={`w-full text-lg h-12 shadow-lg ${editingOriginals ? 'bg-amber-600 hover:bg-amber-700' : 'bg-indigo-600'}`}
+                            >
+                                {saveCountdown > 0
+                                    ? `Please wait... ${saveCountdown}s`
+                                    : (editingOriginals ? 'Update Event & Students' : `Set Permissions to ${selectedRolls.length} Students`)
+                                }
                             </Button>
                         </div>
                     </Card>
@@ -567,9 +590,9 @@ export const Permissions: React.FC = () => {
                                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Allowed Periods</div>
                                 <div className="text-gray-900 dark:text-gray-100 font-mono text-lg tracking-widest">
                                     {getAllowedPeriods(
-  viewingGroup.type,
-  viewingGroup.customPeriods
-).join(' ')}
+                                        viewingGroup.type,
+                                        viewingGroup.customPeriods
+                                    ).join(' ')}
                                 </div>
                             </div>
 
