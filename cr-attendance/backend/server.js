@@ -20,6 +20,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/hod', require('./routes/hodRoutes'));
 app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => res.send('CR Attendance Backend Running'));

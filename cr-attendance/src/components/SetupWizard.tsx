@@ -106,13 +106,14 @@ export const SetupWizard: React.FC = () => {
                                 }
                             >
                                 <option value="CSE">CSE</option>
-                                <option value="ECE">ECE</option>
                                 <option value="IT">IT</option>
-                                <option value="AIML">AIML</option>
-                                <option value="AIDS">AIDS</option>
-                                <option value="CIVIL">CIVIL</option>
-                                <option value="MECH">MECH</option>
+                                <option value="CSBS">CSBS</option>
+                                <option value="AIML">AI&ML</option>
+                                <option value="AIDS">AI&DS</option>
+                                <option value="ECE">ECE</option>
                                 <option value="EEE">EEE</option>
+                                <option value="MECH">MECH</option>
+                                <option value="CIVIL">CIVIL</option>
                             </select>
                         </div>
 

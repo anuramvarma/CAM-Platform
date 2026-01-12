@@ -70,6 +70,16 @@ exports.login = async (req, res) => {
 
         res.json({
             token,
+            // For HoD Portal (Nested Object)
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                classConfigured: user.isSetupComplete,
+                classId: classId,
+                isApproved: user.isApproved
+            },
+            // For CR Portal (Legacy Flat Structure)
             userId: user._id,
             classConfigured: user.isSetupComplete,
             classId: classId,
