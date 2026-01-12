@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../services/api';
-import { Users, Lock, Unlock, TrendingUp, Grid, X, Plus, CheckCircle, AlertCircle, Edit2 } from 'lucide-react';
+import { Users, Lock, Unlock, TrendingUp, Grid, X, Plus, Edit2 } from 'lucide-react';
 
 interface Class {
     id: string;
