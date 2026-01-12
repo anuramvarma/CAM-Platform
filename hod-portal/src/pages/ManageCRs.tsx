@@ -15,6 +15,26 @@ export const ManageCRs = () => {
     const fetchCRs = async () => {
         try {
             const data = await api.hod.getCRs();
+            data.sort((a: any, b: any) => {
+                const clsA = a.classId;
+                const clsB = b.classId;
+
+                // Handle null classIds (put at bottom)
+                if (!clsA && !clsB) return 0;
+                if (!clsA) return 1;
+                if (!clsB) return -1;
+
+                // Sort by Year
+                const yearDiff = Number(clsA.yearOfStudy) - Number(clsB.yearOfStudy);
+                if (yearDiff !== 0) return yearDiff;
+
+                // Sort by Dept
+                const deptDiff = (clsA.dept || '').localeCompare(clsB.dept || '');
+                if (deptDiff !== 0) return deptDiff;
+
+                // Sort by Section
+                return (clsA.section || '').localeCompare(clsB.section || '');
+            });
             setCrs(data);
         } catch (err) {
             console.error(err);
@@ -50,8 +70,8 @@ export const ManageCRs = () => {
     return (
         <div className="space-y-8 fade-in pb-10">
             <header>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage CRs</h1>
-                <p className="text-gray-500 dark:text-gray-400">Approve new class representatives and manage existing accounts</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">Manage CRs</h1>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Approve new class representatives and manage existing accounts</p>
             </header>
 
             {/* Pending Requests */}

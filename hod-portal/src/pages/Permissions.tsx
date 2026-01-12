@@ -176,10 +176,10 @@ export const Permissions = () => {
 
     return (
         <div className="space-y-6 fade-in pb-10">
-            <header className="flex justify-between items-center">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Permissions</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Grant and revoke student permissions</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">Manage Permissions</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Grant and revoke student permissions</p>
                 </div>
             </header>
 

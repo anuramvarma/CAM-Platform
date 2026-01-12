@@ -58,14 +58,14 @@ export const Sidebar = () => {
     return (
         <>
             {/* Mobile Header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 z-50 transition-colors duration-300">
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-4 z-50 transition-colors duration-300">
+                <button onClick={toggleSidebar} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                    {isOpen ? <X /> : <Menu />}
+                </button>
                 <div className="flex items-center gap-2 font-bold text-lg text-gray-900 dark:text-white">
                     <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     HoD Portal
                 </div>
-                <button onClick={toggleSidebar} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                    {isOpen ? <X /> : <Menu />}
-                </button>
             </div>
 
             {/* Sidebar */}

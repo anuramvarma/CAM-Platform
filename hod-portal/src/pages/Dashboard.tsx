@@ -206,21 +206,21 @@ export const Dashboard = () => {
 
     return (
         <div className="space-y-6 fade-in pb-10">
-            <header className="mb-8 flex justify-between items-start">
+            <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {viewMode === 'DAILY' ? 'Overview and Analytics' : 'Department Statistics'}
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+                        {viewMode === 'DAILY' ? 'Overview & Analytics' : 'Department Statistics'}
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400">
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">
                         {viewMode === 'DAILY' ? "Today's overall department status" : "Strategic academic analytics"}
                     </p>
                 </div>
-                <div className="flex flex-col items-end gap-3">
-                    <div className="flex gap-2">
+                <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
                         <Button
                             variant="secondary"
                             size="sm"
-                            className="bg-white text-green-700 border border-green-200 hover:bg-green-50 shadow-sm"
+                            className="bg-white text-green-700 border border-green-200 hover:bg-green-50 shadow-sm flex-1 md:flex-none justify-center"
                             onClick={handleExportExcel}
                             disabled={!stats}
                         >
@@ -230,7 +230,7 @@ export const Dashboard = () => {
                         <Button
                             variant="secondary"
                             size="sm"
-                            className="bg-white text-red-700 border border-red-200 hover:bg-red-50 shadow-sm"
+                            className="bg-white text-red-700 border border-red-200 hover:bg-red-50 shadow-sm flex-1 md:flex-none justify-center"
                             onClick={handleExportPDF}
                             disabled={!stats}
                         >
@@ -240,7 +240,7 @@ export const Dashboard = () => {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
+                            className="text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex-1 md:flex-none justify-center"
                             onClick={() => fetchStats(true)}
                             disabled={refreshing}
                         >
@@ -250,23 +250,23 @@ export const Dashboard = () => {
                     </div>
 
                     {/* View Mode Toggle */}
-                    <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                    <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-full md:w-auto">
                         <button
                             onClick={() => setViewMode('DAILY')}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'DAILY' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                            className={`flex-1 md:flex-none px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'DAILY' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                         >
                             Daily Dashboard
                         </button>
                         <button
                             onClick={() => setViewMode('STATS')}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'STATS' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                            className={`flex-1 md:flex-none px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'STATS' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                         >
                             Statistics
                         </button>
                     </div>
 
                     {viewMode === 'DAILY' && (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
                             <span className={`text-sm font-medium ${!showDetailed ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500'}`}>Overall</span>
                             <button
                                 onClick={() => setShowDetailed(!showDetailed)}

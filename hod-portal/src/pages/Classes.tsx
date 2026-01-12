@@ -30,6 +30,15 @@ export const Classes = () => {
     const fetchClasses = async () => {
         try {
             const data = await api.hod.getClasses();
+            data.sort((a: Class, b: Class) => {
+                const yearDiff = a.yearOfStudy - b.yearOfStudy;
+                if (yearDiff !== 0) return yearDiff;
+
+                const deptDiff = a.dept.localeCompare(b.dept);
+                if (deptDiff !== 0) return deptDiff;
+
+                return a.section.localeCompare(b.section);
+            });
             setClasses(data);
         } catch (err: any) {
             console.error(err);
@@ -83,12 +92,12 @@ export const Classes = () => {
 
     return (
         <div className="space-y-8 fade-in pb-10">
-            <header className="flex justify-between items-center flex-wrap gap-4">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage Classes</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Monitor and create department classes</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">Manage Classes</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Monitor and create department classes</p>
                 </div>
-                <Button onClick={() => setIsCreateOpen(true)} className="shadow-lg hover:shadow-xl transition-all">
+                <Button onClick={() => setIsCreateOpen(true)} className="shadow-lg hover:shadow-xl transition-all w-full md:w-auto justify-center">
                     <Plus className="w-5 h-5 mr-2" /> Create New Class
                 </Button>
             </header>
