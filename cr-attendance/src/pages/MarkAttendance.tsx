@@ -12,6 +12,7 @@ export const MarkAttendance: React.FC = () => {
 
     // Popup State
     const [showPreview, setShowPreview] = useState(false);
+    const [showCount, setShowCount] = useState(false);
     // Form State
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [subjectId, setSubjectId] = useState('');
@@ -357,6 +358,28 @@ export const MarkAttendance: React.FC = () => {
                         </div>
 
                         <div className="p-6 space-y-4 overflow-y-auto">
+                            {/* Toggle Display Count */}
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900 dark:text-white">Display Count</span>
+                                <button
+                                    onClick={() => setShowCount(!showCount)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showCount ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                >
+                                    <span
+                                        className={`${showCount ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
+                                    />
+                                </button>
+                            </div>
+
+                            {showCount && (
+                                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800 text-center animate-in fade-in zoom-in-95 duration-200">
+                                    <p className="text-xs text-indigo-800 dark:text-indigo-200 font-medium uppercase tracking-wide mb-1">Total Present / Total Strength</p>
+                                    <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+                                        {students.length - getAbsentees().length}/{students.length}
+                                    </p>
+                                </div>
+                            )}
+
                             <pre className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words border border-gray-200 dark:border-gray-700">
                                 {generateSummary()}
                             </pre>
