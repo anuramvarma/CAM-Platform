@@ -420,7 +420,7 @@ export const Dashboard = () => {
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Class-wise Strength Summary</h2>
                             <div className="flex gap-2">
-                                {/* <Button
+                                {<Button
                                     variant="secondary"
                                     size="sm"
                                     className="bg-white text-green-700 border border-green-200 hover:bg-green-50 shadow-sm"
@@ -429,7 +429,7 @@ export const Dashboard = () => {
                                 >
                                     <FileSpreadsheet size={16} className="mr-2" />
                                     Excel
-                                </Button> */}
+                                </Button>}
                                 <Button
                                     variant="secondary"
                                     size="sm"
