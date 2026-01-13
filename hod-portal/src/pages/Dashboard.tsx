@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toast } from 'react-toastify';
 
 const toRoman = (n: any) => {
     const num = parseInt(n);
@@ -169,6 +170,58 @@ export const Dashboard = () => {
         doc.save(`Today_Attendance_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
+    const handleCopySummary = () => {
+        if (!stats?.classSummary) return;
+
+        const d = new Date();
+        const date = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+        // Get Department from LocalStorage
+        let deptName = 'Department';
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user.department) {
+                    deptName = user.department;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse user from local storage', e);
+        }
+
+        let clipboardText = `📊 Class-wise Attendance Summary\nDate: ${date}\nDepartment: ${deptName}\n\n`;
+
+        // Group by Year
+        const groupedByYear: Record<number, any[]> = {};
+        stats.classSummary.forEach((cls: any) => {
+            const year = cls.year || parseInt(cls.className.split('-')[0]) || 0;
+            if (!groupedByYear[year]) groupedByYear[year] = [];
+            groupedByYear[year].push(cls);
+        });
+
+        // Sort years
+        const years = Object.keys(groupedByYear).map(Number).sort((a, b) => a - b);
+
+        years.forEach(year => {
+            const romanYear = toRoman(year);
+            clipboardText += `Year ${romanYear}\n`;
+
+            groupedByYear[year].forEach((cls: any) => {
+                const displayName = cls.className.split('-').length >= 3
+                    ? cls.className.split('-').slice(1).join('-')
+                    : cls.className;
+
+                // Format: • CSE-C → 0 / 62
+                clipboardText += `• ${displayName} → ${cls.present || 0} / ${cls.totalStudents || 0} \n`;
+            });
+            clipboardText += '\n'; // Add spacing between years
+        });
+
+        navigator.clipboard.writeText(clipboardText);
+        toast.success('Summary copied to clipboard!');
+    };
+
     const [viewMode, setViewMode] = useState<'DAILY' | 'STATS'>('DAILY');
     const [selectedStatYear, setSelectedStatYear] = useState<number | null>(null);
 
@@ -264,26 +317,6 @@ export const Dashboard = () => {
                 <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
                         <Button
-                            variant="secondary"
-                            size="sm"
-                            className="bg-white text-green-700 border border-green-200 hover:bg-green-50 shadow-sm flex-1 md:flex-none justify-center"
-                            onClick={handleExportExcel}
-                            disabled={!stats}
-                        >
-                            <FileSpreadsheet size={16} className="mr-2" />
-                            Excel
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            className="bg-white text-red-700 border border-red-200 hover:bg-red-50 shadow-sm flex-1 md:flex-none justify-center"
-                            onClick={handleExportPDF}
-                            disabled={!stats}
-                        >
-                            <Download size={16} className="mr-2" />
-                            PDF
-                        </Button>
-                        <Button
                             variant="ghost"
                             size="sm"
                             className="text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex-1 md:flex-none justify-center"
@@ -301,13 +334,13 @@ export const Dashboard = () => {
                             onClick={() => setViewMode('DAILY')}
                             className={`flex-1 md:flex-none px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'DAILY' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                         >
-                            Daily Dashboard
+                            Today's Dashboard
                         </button>
                         <button
                             onClick={() => setViewMode('STATS')}
                             className={`flex-1 md:flex-none px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'STATS' ? 'bg-white dark:bg-gray-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                         >
-                            Statistics
+                            Dept. Statistics
                         </button>
                     </div>
 
@@ -379,63 +412,116 @@ export const Dashboard = () => {
                     )}
 
                     <div className="mt-8">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Class-wise Strength Summary</h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Class-wise Strength Summary</h2>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="bg-white text-green-700 border border-green-200 hover:bg-green-50 shadow-sm"
+                                    onClick={handleExportExcel}
+                                    disabled={!stats}
+                                >
+                                    <FileSpreadsheet size={16} className="mr-2" />
+                                    Excel
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="bg-white text-red-700 border border-red-200 hover:bg-red-50 shadow-sm"
+                                    onClick={handleExportPDF}
+                                    disabled={!stats}
+                                >
+                                    <Download size={16} className="mr-2" />
+                                    PDF
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="bg-white text-purple-700 border border-purple-200 hover:bg-purple-50 shadow-sm"
+                                    onClick={handleCopySummary}
+                                    disabled={!stats}
+                                >
+                                    <Copy size={16} className="mr-2" />
+                                    Copy
+                                </Button>
+                            </div>
+                        </div>
                         <Card className="overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                                         <tr>
+                                            <th className="px-6 py-4 font-medium">Year</th>
                                             <th className="px-6 py-4 font-medium">Class Name</th>
                                             <th className="px-6 py-4 font-medium">Total Strength</th>
                                             <th className="px-6 py-4 font-medium text-green-600 dark:text-green-400">Presentees</th>
                                             <th className="px-6 py-4 font-medium text-red-600 dark:text-red-400">Absentees</th>
                                             <th className="px-6 py-4 font-medium text-blue-600 dark:text-blue-400">Active Permissions</th>
-                                            <th className="px-6 py-4 font-medium text-indigo-600 dark:text-indigo-400">Overall</th>
+                                            <th className="px-6 py-4 font-medium text-indigo-600 dark:text-indigo-400">Count </th>
                                             <th className="px-6 py-4 font-medium">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                        {stats?.classSummary?.map((cls: any) => (
-                                            <tr key={cls.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{formatClassName(cls.className)}</td>
-                                                <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{cls.totalStudents}</td>
-                                                <td className="px-6 py-4 text-green-600 dark:text-green-400 font-medium">{cls.present}</td>
-                                                <td className="px-6 py-4 text-red-600 dark:text-red-400 font-medium">{cls.absent}</td>
-                                                <td className="px-6 py-4 text-blue-600 dark:text-blue-400 font-medium">{cls.permissionsCount || 0}</td>
-                                                <td className="px-6 py-4 font-mono font-bold text-gray-800 dark:text-gray-200">
-                                                    <div className="flex items-center gap-2">
-                                                        <span>{cls.present}/{cls.totalStudents}</span>
-                                                        <button
-                                                            onClick={() => {
-                                                                const date = new Date();
-                                                                const d = String(date.getDate()).padStart(2, '0');
-                                                                const m = String(date.getMonth() + 1).padStart(2, '0');
-                                                                const y = date.getFullYear();
-                                                                const formattedDate = `${d}-${m}-${y}`;
-                                                                const text = `${formattedDate}:\n${formatClassName(cls.className)} : ${cls.present}/${cls.totalStudents}.`;
-                                                                navigator.clipboard.writeText(text);
-                                                                alert('Copied to clipboard');
-                                                            }}
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-500"
-                                                            title="Copy Status"
-                                                        >
-                                                            <Copy size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${cls.status === 'Marked'
-                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                                        }`}>
-                                                        {cls.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {stats?.classSummary?.map((cls: any, index: number) => {
+                                            const currentYear = cls.year || parseInt(cls.className.split('-')[0]) || 0;
+                                            const prevClass = index > 0 ? stats.classSummary[index - 1] : null;
+                                            const prevYear = prevClass ? (prevClass.year || parseInt(prevClass.className.split('-')[0]) || 0) : null;
+                                            const isFirstOccurrence = currentYear !== prevYear;
+                                            const rowSpan = yearStrategicStats[currentYear]?.sectionCount || 1;
+
+                                            // Display class name without year (e.g., "CSE-C" instead of "III-CSE-C")
+                                            const displayName = cls.className.split('-').length >= 3
+                                                ? cls.className.split('-').slice(1).join('-')
+                                                : cls.className;
+
+                                            return (
+                                                <tr key={cls.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                                                    {isFirstOccurrence && (
+                                                        <td rowSpan={rowSpan} className="px-6 py-4 font-bold text-gray-900 dark:text-white border-r border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 align-middle text-center">
+                                                            {toRoman(currentYear)}
+                                                        </td>
+                                                    )}
+                                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{displayName}</td>
+                                                    <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{cls.totalStudents}</td>
+                                                    <td className="px-6 py-4 text-green-600 dark:text-green-400 font-medium">{cls.present}</td>
+                                                    <td className="px-6 py-4 text-red-600 dark:text-red-400 font-medium">{cls.absent}</td>
+                                                    <td className="px-6 py-4 text-blue-600 dark:text-blue-400 font-medium">{cls.permissionsCount || 0}</td>
+                                                    <td className="px-6 py-4 font-mono font-bold text-gray-800 dark:text-gray-200">
+                                                        <div className="flex items-center gap-2">
+                                                            <span>{cls.present}/{cls.totalStudents}</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const date = new Date();
+                                                                    const d = String(date.getDate()).padStart(2, '0');
+                                                                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                                                                    const y = date.getFullYear();
+                                                                    const formattedDate = `${d}-${m}-${y}`;
+                                                                    const text = `${formattedDate}:\n${formatClassName(cls.className)} : ${cls.present}/${cls.totalStudents}.`;
+                                                                    navigator.clipboard.writeText(text);
+                                                                    alert('Copied to clipboard');
+                                                                }}
+                                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-500"
+                                                                title="Copy Status"
+                                                            >
+                                                                <Copy size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${cls.status === 'Marked'
+                                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                            }`}>
+                                                            {cls.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                         {stats?.classSummary?.length === 0 && (
                                             <tr>
-                                                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                                                     No classes found.
                                                 </td>
                                             </tr>

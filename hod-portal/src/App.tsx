@@ -17,6 +17,9 @@ const ProtectedRoute = () => {
   return <Layout />;
 };
 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 function App() {
   return (
     <Router>
@@ -31,6 +34,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
         </Route>
       </Routes>
+      <ToastContainer position="bottom-right" theme="colored" />
     </Router>
   );
 }
