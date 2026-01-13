@@ -7,6 +7,36 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const toRoman = (n: any) => {
+    const num = parseInt(n);
+    if (num === 1) return 'I';
+    if (num === 2) return 'II';
+    if (num === 3) return 'III';
+    if (num === 4) return 'IV';
+    return n;
+};
+
+const formatClassName = (name: string) => {
+    if (!name) return '';
+    const parts = name.split('-');
+    if (parts.length >= 3) {
+        return `${toRoman(parts[0])}-${parts.slice(1).join('-')}`;
+    }
+    return name;
+};
+
+const DEPT_FULL_NAMES: Record<string, string> = {
+    'CSE': 'Computer Science and Engineering',
+    'IT': 'Information Technology',
+    'CSBS': 'Computer Science and Business Systems',
+    'AIML': 'Artificial Intelligence and Machine Learning',
+    'AIDS': 'Artificial Intelligence and Data Science',
+    'EEE': 'Electrical and Electronics Engineering',
+    'ECE': 'Electronics and Communication Engineering',
+    'MECH': 'Mechanical Engineering',
+    'CIVIL': 'Civil Engineering'
+};
+
 export const Dashboard = () => {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -21,7 +51,7 @@ export const Dashboard = () => {
 
         // Prepare Data
         const data = stats.classSummary.map((cls: any) => ({
-            'Class Name': cls.className,
+            'Class Name': formatClassName(cls.className),
             'Total Strength': cls.totalStudents || 0,
             'Total Presentees': cls.present || 0,
             'Total Absentees': cls.absent || 0,
@@ -46,7 +76,22 @@ export const Dashboard = () => {
     const handleExportPDF = () => {
         if (!stats?.classSummary) return;
         const doc = new jsPDF();
-        const date = new Date().toLocaleDateString();
+        const d = new Date();
+        const date = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+
+        // Get Department from LocalStorage
+        let deptName = 'Department';
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user.department) {
+                    deptName = DEPT_FULL_NAMES[user.department] || user.department;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse user from local storage', e);
+        }
 
         // Header
         doc.setFontSize(18);
@@ -56,7 +101,7 @@ export const Dashboard = () => {
         doc.setFontSize(11);
         doc.setTextColor(100, 100, 100);
         doc.text(`Date: ${date}`, 14, 32);
-        doc.text('Department: Computer Science', 14, 38);
+        doc.text(`Department: ${deptName}`, 14, 38);
 
         // Summary
         doc.setFillColor(245, 247, 250);
@@ -86,7 +131,7 @@ export const Dashboard = () => {
 
         // Table
         const tableData = stats.classSummary.map((cls: any) => [
-            cls.className,
+            formatClassName(cls.className),
             cls.totalStudents,
             cls.present,
             cls.absent,
@@ -352,7 +397,7 @@ export const Dashboard = () => {
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                         {stats?.classSummary?.map((cls: any) => (
                                             <tr key={cls.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{cls.className}</td>
+                                                <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{formatClassName(cls.className)}</td>
                                                 <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{cls.totalStudents}</td>
                                                 <td className="px-6 py-4 text-green-600 dark:text-green-400 font-medium">{cls.present}</td>
                                                 <td className="px-6 py-4 text-red-600 dark:text-red-400 font-medium">{cls.absent}</td>
@@ -367,7 +412,7 @@ export const Dashboard = () => {
                                                                 const m = String(date.getMonth() + 1).padStart(2, '0');
                                                                 const y = date.getFullYear();
                                                                 const formattedDate = `${d}-${m}-${y}`;
-                                                                const text = `${formattedDate}:\n${cls.className} : ${cls.present}/${cls.totalStudents}.`;
+                                                                const text = `${formattedDate}:\n${formatClassName(cls.className)} : ${cls.present}/${cls.totalStudents}.`;
                                                                 navigator.clipboard.writeText(text);
                                                                 alert('Copied to clipboard');
                                                             }}
@@ -457,7 +502,7 @@ export const Dashboard = () => {
                                                 .map((cls: any) => (
                                                     <tr key={cls.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                                                         <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                                                            {cls.className}
+                                                            {formatClassName(cls.className)}
                                                         </td>
                                                         <td className="px-6 py-4 text-indigo-600 dark:text-indigo-400 font-medium">
                                                             {cls.regularCount || 0}

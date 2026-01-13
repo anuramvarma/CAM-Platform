@@ -8,34 +8,44 @@ const seedHoD = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('MongoDB Connected');
 
-        const email = 'hod@av.com';
-        const password = 'hod123';
-        const role = 'HOD';
+        const hods = [
+            { dept: 'CSE', email: 'hodcse@cam.in' },
+            { dept: 'IT', email: 'hodit@cam.in' },
+            { dept: 'CSBS', email: 'hodcsbs@cam.in' },
+            { dept: 'AIML', email: 'hodaiml@cam.in' },
+            { dept: 'AIDS', email: 'hodaids@cam.in' },
+            { dept: 'EEE', email: 'hodeee@cam.in' },
+            { dept: 'ECE', email: 'hodece@cam.in' },
+            { dept: 'MECH', email: 'hodmech@cam.in' },
+            { dept: 'CIVIL', email: 'hodcivil@cam.in' }
+        ];
 
-        const existingHoD = await User.findOne({ email });
-        if (existingHoD) {
-            console.log('HoD already exists.');
-            const salt = await bcrypt.genSalt(10);
-            existingHoD.password = await bcrypt.hash(password, salt);
-            existingHoD.role = role;
-            existingHoD.isSetupComplete = true; // HoD doesn't need setup like CR
-            existingHoD.isApproved = true;
-            await existingHoD.save();
-            console.log('HoD credentials updated.');
-        } else {
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
+        const password = '123';
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-            const newHoD = new User({
-                email,
-                password: hashedPassword,
-                role,
-                isSetupComplete: true,
-                isApproved: true
-            });
-
-            await newHoD.save();
-            console.log('HoD created successfully.');
+        for (const h of hods) {
+            const existingHoD = await User.findOne({ email: h.email });
+            if (existingHoD) {
+                existingHoD.password = hashedPassword;
+                existingHoD.role = 'HOD';
+                existingHoD.department = h.dept;
+                existingHoD.isSetupComplete = true;
+                existingHoD.isApproved = true;
+                await existingHoD.save();
+                console.log(`Updated HOD for ${h.dept}`);
+            } else {
+                const newHoD = new User({
+                    email: h.email,
+                    password: hashedPassword,
+                    role: 'HOD',
+                    department: h.dept,
+                    isSetupComplete: true,
+                    isApproved: true
+                });
+                await newHoD.save();
+                console.log(`Created HOD for ${h.dept}`);
+            }
         }
 
         mongoose.connection.close();

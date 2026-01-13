@@ -75,6 +75,7 @@ exports.login = async (req, res) => {
                 id: user._id,
                 email: user.email,
                 role: user.role,
+                department: user.department, // Added for HoD context
                 classConfigured: user.isSetupComplete,
                 classId: classId,
                 isApproved: user.isApproved

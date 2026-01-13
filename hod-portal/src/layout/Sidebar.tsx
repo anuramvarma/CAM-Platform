@@ -48,9 +48,10 @@ export const Sidebar = () => {
     const links = [
         { to: '/', label: 'Home', icon: LayoutDashboard },
         { to: '/classes', label: 'Manage classes', icon: School },
-        { to: '/students', label: 'Manage Students', icon: Users },
         { to: '/permissions', label: 'Manage Permissions', icon: FileSignature },
+        { to: '/students', label: 'Manage Students', icon: Users },
         { to: '/crs', label: 'Manage CRs', icon: UserCog },
+        { to: '/profile', label: 'Profile', icon: Users }, // Using Users icon as a placeholder or reuse UserCog
     ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);

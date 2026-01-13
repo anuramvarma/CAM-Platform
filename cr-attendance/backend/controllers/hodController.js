@@ -59,6 +59,12 @@ const generateRolls = (start, end) => {
 };
 
 exports.createClass = async (req, res) => {
+    // Validate HOD Dept First
+    const adminUser = await User.findById(req.user.userId);
+    if (adminUser.department && req.body.dept !== adminUser.department) {
+        return res.status(403).json({ error: 'Access Denied: Can only create classes for your department' });
+    }
+
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -166,6 +172,16 @@ exports.createClass = async (req, res) => {
 exports.updateClass = async (req, res) => {
     try {
         const { classId } = req.params;
+
+        // Access Check
+        const user = await User.findById(req.user.userId);
+        if (user.department) {
+            const cls = await Class.findById(classId);
+            if (!cls || cls.dept !== user.department) {
+                return res.status(403).json({ error: 'Access Denied: Class not in your department' });
+            }
+        }
+
         const updates = req.body;
 
         // Sanitize inputs if necessary
@@ -187,21 +203,30 @@ exports.updateClass = async (req, res) => {
 
 exports.getStats = async (req, res) => {
     try {
+        const user = await User.findById(req.user.userId);
+        const deptFilter = user.department ? { dept: user.department } : {};
+
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-        // 1. Total Students
-        const totalStudents = await Student.countDocuments();
-        const regularTotal = await Student.countDocuments({ type: 'REGULAR' });
-        const lateralTotal = await Student.countDocuments({ type: 'LATERAL' });
+        // 0. Get Scope (Classes)
+        const allClasses = await Class.find(deptFilter);
+        const classIds = allClasses.map(c => c._id);
 
-        // 2. Active Permissions
+        // 1. Total Students (Scoped)
+        const totalStudents = await Student.countDocuments({ classId: { $in: classIds } });
+        const regularTotal = await Student.countDocuments({ classId: { $in: classIds }, type: 'REGULAR' });
+        const lateralTotal = await Student.countDocuments({ classId: { $in: classIds }, type: 'LATERAL' });
+
+        // 2. Active Permissions (Scoped)
         const activePermissions = await Permission.countDocuments({
+            classId: { $in: classIds },
             startDate: { $lte: today },
             endDate: { $gte: today }
         });
 
         // 3. Attendance Stats (First attendance found per class)
-        const todaysAttendance = await Attendance.find({ date: today })
+        // We only care about attendance for our classes
+        const todaysAttendance = await Attendance.find({ date: today, classId: { $in: classIds } })
             .sort({ createdAt: 1 });
 
         const classAttendanceMap = {};
@@ -216,9 +241,6 @@ exports.getStats = async (req, res) => {
 
         // For class-wise summary
         const classSummary = [];
-
-        // Iterate over ALL classes to ensure we show even those who haven't marked
-        const allClasses = await Class.find();
 
         for (const cls of allClasses) {
             const studentCount = await Student.countDocuments({ classId: cls._id });
@@ -237,7 +259,6 @@ exports.getStats = async (req, res) => {
             let absent = 0;
             let present = 0;
             let status = 'Pending';
-            let strength = `${studentCount}`;
 
             if (record) {
                 absent = record.absentees.length;
@@ -270,13 +291,13 @@ exports.getStats = async (req, res) => {
             totalStudents,
             regularTotal,
             lateralTotal,
-            totalClasses, // New
+            totalClasses,
             presentToday: totalPresent,
             absentToday: totalAbsent,
             activePermissions,
             classSummary
         };
-        console.log('Sending Hod Stats:', JSON.stringify(responsePayload, null, 2));
+        // console.log('Sending Hod Stats:', JSON.stringify(responsePayload, null, 2));
         res.json(responsePayload);
 
     } catch (err) {
@@ -288,7 +309,10 @@ exports.getStats = async (req, res) => {
 exports.getClasses = async (req, res) => {
     console.log('GET /hod/classes request received');
     try {
-        const classes = await Class.find().populate('userId', 'email name');
+        const user = await User.findById(req.user.userId);
+        const deptFilter = user.department ? { dept: user.department } : {};
+
+        const classes = await Class.find(deptFilter).populate('userId', 'email name');
         const today = new Date().toISOString().split('T')[0];
 
         const enhancedClasses = await Promise.all(classes.map(async (cls) => {
@@ -322,6 +346,15 @@ exports.deleteClass = async (req, res) => {
     try {
         const { classId } = req.params;
         console.log(`[HoD] Deleting Class ID: ${classId}`);
+
+        // Check Access
+        const user = await User.findById(req.user.userId);
+        if (user.department) {
+            const clsView = await Class.findById(classId);
+            if (!clsView || clsView.dept !== user.department) {
+                return res.status(403).json({ error: 'Access Denied: Class not in your department' });
+            }
+        }
 
         // Debug: Check if class exists
         const cls = await Class.findById(classId);
@@ -369,6 +402,16 @@ exports.deleteClass = async (req, res) => {
 exports.getStudentsByClass = async (req, res) => {
     try {
         const { classId } = req.params;
+
+        // Check Access
+        const user = await User.findById(req.user.userId);
+        if (user.department) {
+            const cls = await Class.findById(classId);
+            if (!cls || cls.dept !== user.department) {
+                return res.status(403).json({ error: 'Access Denied: Class not in your department' });
+            }
+        }
+
         const students = await Student.find({ classId });
         res.json(students);
     } catch (err) {
@@ -501,6 +544,16 @@ exports.deleteStudent = async (req, res) => {
 exports.getPermissionsByClass = async (req, res) => {
     try {
         const { classId } = req.params;
+
+        // Check Access
+        const user = await User.findById(req.user.userId);
+        if (user.department) {
+            const cls = await Class.findById(classId);
+            if (!cls || cls.dept !== user.department) {
+                return res.status(403).json({ error: 'Access Denied: Class not in your department' });
+            }
+        }
+
         const permissions = await Permission.find({ classId });
         res.json(permissions);
     } catch (err) {
@@ -558,7 +611,29 @@ exports.deletePermission = async (req, res) => {
 
 exports.getCRs = async (req, res) => {
     try {
-        const crs = await User.find({ role: 'CR' }).populate('classId', 'yearOfStudy dept section');
+        const user = await User.findById(req.user.userId);
+        let crs = await User.find({ role: 'CR' }).populate('classId', 'yearOfStudy dept section');
+
+        if (user.department) {
+            // Filter CRs that are either not assigned (maybe?) or assigned to same dept
+            // If CR is not assigned (classId is null), HOD might want to see them to approve?
+            // "A HoD should only see data related to their department"
+            // If CR calls themselves "CSE CR" but hasn't created a class, how do we know?
+            // Usually unapproved CRs don't have a class yet.
+            // But 'approveCR' implies they are registered.
+            // If filtering strictly:
+            crs = crs.filter(cr => {
+                // If CR has a class, check class dept
+                if (cr.classId) return cr.classId.dept === user.department;
+                // If CR has NO class, maybe they are pending?
+                // But we don't know their dept until they create a class or we check email/metadata?
+                // For now, let's assume CRs without class are NOT visible or we need another way?
+                // Actually, often CRs create class during setup. 
+                // If they are just "User" with role CR, they might not be linked.
+                // But lines 561 populate classId.
+                return false;
+            });
+        }
         res.json(crs);
     } catch (err) {
         console.error('HoD Get CRs Error:', err);

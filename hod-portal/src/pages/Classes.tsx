@@ -106,7 +106,7 @@ export const Classes = () => {
                 <section key={year} className="space-y-4">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                         <Grid className="w-5 h-5 text-indigo-500" />
-                        Year {year}
+                        Year {['', 'I', 'II', 'III', 'IV'][parseInt(year)] || year}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {groupedClasses[parseInt(year)].map((cls) => (

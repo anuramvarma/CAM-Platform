@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
     classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class' }, // Linked after setup
     isSetupComplete: { type: Boolean, default: false },
     isApproved: { type: Boolean, default: false }, // False for joiners, True for creators
-    expiresAt: { type: Date, default: null } // for temporary guest CRs
+    expiresAt: { type: Date, default: null }, // for temporary guest CRs
+    department: { type: String } // For HODs: CSE, IT, etc.
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

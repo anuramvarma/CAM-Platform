@@ -47,6 +47,15 @@ export const api = {
         },
         getProfile: async () => {
             return request('/auth/me');
+        },
+        changePassword: async (data: any) => {
+            const res = await fetch(`${API_URL}/auth/change-password`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw await res.json();
+            return res.json();
         }
     },
     // Add HoD specific endpoints here as we build them
