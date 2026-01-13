@@ -44,6 +44,7 @@ export const Dashboard = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [showDetailed, setShowDetailed] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
     const handleExportExcel = () => {
         if (!stats?.classSummary) return;
@@ -228,8 +229,17 @@ export const Dashboard = () => {
     const fetchStats = async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
         try {
-            const data = await api.hod.getStats();
+            const today = new Date().toISOString().split('T')[0];
+            let data;
+
+            if (selectedDate === today) {
+                data = await api.hod.getStats();
+            } else {
+                data = await api.hod.getAnalyticsHistory(selectedDate);
+            }
+
             if (data && data.classSummary) {
+                // Determine if we need to sort (History data might be different structure if we didn't normalize it perfect, but we did)
                 data.classSummary.sort((a: any, b: any) => {
                     // Assuming className format: "Year-Dept-Section" e.g., "1-CSE-A"
                     const partsA = a.className.split('-');
@@ -249,9 +259,15 @@ export const Dashboard = () => {
                 });
             }
             setStats(data);
+            setError('');
         } catch (err: any) {
             console.error(err);
-            setError('Failed to load dashboard data.');
+            if (err.status === 404) {
+                setStats(null);
+                setError('No analytics data recorded for this date.');
+            } else {
+                setError('Failed to load dashboard data.');
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -260,7 +276,7 @@ export const Dashboard = () => {
 
     useEffect(() => {
         fetchStats();
-    }, []);
+    }, [selectedDate]);
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading the data to display on dashboard...</div>;
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
@@ -314,9 +330,16 @@ export const Dashboard = () => {
                         {viewMode === 'DAILY' ? "Today's overall department status" : "Strategic academic analytics"}
                     </p>
                     {viewMode === 'DAILY' && (
-                        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">
-                            Date : {new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}
-                        </p>
+                        <div className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium flex items-center gap-2">
+                            <span>Date :</span>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                max={new Date().toISOString().split('T')[0]}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="bg-transparent border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:text-white"
+                            />
+                        </div>
                     )}
                 </div>
                 <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">

@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/authRoutes');
 const apiRoutes = require('./routes/api');
+const { startCron } = require('./services/analyticsCron');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -37,7 +38,10 @@ app.use((err, req, res, next) => {
 });
 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ MongoDB Connected'))
+    .then(() => {
+        console.log('✅ MongoDB Connected');
+        startCron();
+    })
     .catch(err => console.error('❌ DB Connection Error:', err));
 
 app.listen(PORT, '0.0.0.0', () => {

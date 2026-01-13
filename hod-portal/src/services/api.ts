@@ -97,6 +97,9 @@ export const api = {
         getStats: async () => {
             return request('/hod/stats');
         },
+        getAnalyticsHistory: async (date: string) => {
+            return request(`/hod/stats/history?date=${date}`);
+        },
         getClasses: async () => {
             const res = await fetch(`${API_URL}/hod/classes`, { headers: getHeaders() });
             if (!res.ok) throw await res.json();

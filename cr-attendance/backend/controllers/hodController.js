@@ -5,6 +5,7 @@ const Attendance = require('../models/Attendance');
 const Permission = require('../models/Permission');
 const Class = require('../models/Class');
 const User = require('../models/User');
+const DailyAnalytics = require('../models/DailyAnalytics');
 
 // Helper to generate roll numbers (Duplicated from setupController)
 const generateRolls = (start, end) => {
@@ -729,5 +730,41 @@ exports.undoPromoteClasses = async (req, res) => {
         res.status(500).json({ error: err.message || 'Server Error' });
     } finally {
         session.endSession();
+    }
+};
+
+exports.getAnalyticsHistory = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user.department) return res.status(403).json({ error: 'No department assigned' });
+
+        const { date } = req.query; // YYYY-MM-DD
+        if (!date) return res.status(400).json({ error: 'Date is required' });
+
+        const record = await DailyAnalytics.findOne({
+            date: date,
+            department: user.department
+        });
+
+        if (!record) {
+            return res.status(404).json({ message: 'No analytics found for this date' });
+        }
+
+        const responsePayload = {
+            totalStudents: record.totals.totalStrength,
+            regularTotal: record.totals.regularTotal,
+            lateralTotal: record.totals.lateralTotal,
+            totalClasses: record.totals.totalClasses,
+            presentToday: record.totals.presentees,
+            absentToday: record.totals.absentees,
+            activePermissions: record.totals.activePermissions,
+            classSummary: record.classWise
+        };
+
+        res.json(responsePayload);
+
+    } catch (err) {
+        console.error('HoD History Error:', err);
+        res.status(500).json({ error: 'Server Error' });
     }
 };

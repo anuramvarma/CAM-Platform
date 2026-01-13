@@ -6,6 +6,7 @@ const hodController = require('../controllers/hodController');
 
 const authMiddleware = require('../middleware/authMiddleware');
 
+router.get('/stats/history', authMiddleware, hodController.getAnalyticsHistory);
 router.get('/stats', authMiddleware, hodController.getStats);
 router.get('/classes', authMiddleware, hodController.getClasses);
 router.post('/classes', authMiddleware, hodController.createClass);
