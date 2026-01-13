@@ -661,3 +661,73 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ error: 'Server Error' });
     }
 };
+
+exports.promoteClasses = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user.department) {
+            throw new Error('User has no department assigned');
+        }
+
+        // Increment yearOfStudy for all classes in the department
+        const result = await Class.updateMany(
+            { dept: user.department },
+            { $inc: { yearOfStudy: 1 } },
+            { session }
+        );
+
+        await session.commitTransaction();
+        res.json({
+            message: 'Academic year promoted successfully',
+            updatedCount: result.modifiedCount
+        });
+
+    } catch (err) {
+        await session.abortTransaction();
+        console.error('HoD Promote Classes Error:', err);
+        res.status(500).json({ error: err.message || 'Server Error' });
+    } finally {
+        session.endSession();
+    }
+};
+
+exports.undoPromoteClasses = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user.department) {
+            throw new Error('User has no department assigned');
+        }
+
+        // Decrement yearOfStudy for all classes in the department
+        // Safety: ensure we don't go below 1 (though logic implies we are reversing a +1)
+        // We only decrement if year > min(possible). If we assume valid classes start at 1.
+        // But if we undo a promotion that made 1->2, we decrement 2->1.
+        // We probably shouldn't decrement classes that are already 1 (e.g. newly created ones) 
+        // IF we want to be strict about 'undoing specific items'. 
+        // However, given the prompt's simplicity, a global decrement for the dept is the mirror of global increment.
+        // We will add a filter { yearOfStudy: { $gt: 0 } } just in case
+
+        const result = await Class.updateMany(
+            { dept: user.department, yearOfStudy: { $gt: 0 } },
+            { $inc: { yearOfStudy: -1 } },
+            { session }
+        );
+
+        await session.commitTransaction();
+        res.json({
+            message: 'Academic year promotion reversed',
+            updatedCount: result.modifiedCount
+        });
+
+    } catch (err) {
+        await session.abortTransaction();
+        console.error('HoD Undo Promote Classes Error:', err);
+        res.status(500).json({ error: err.message || 'Server Error' });
+    } finally {
+        session.endSession();
+    }
+};

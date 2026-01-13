@@ -197,6 +197,22 @@ export const api = {
             });
             if (!res.ok) throw await res.json();
             return res.json();
+        },
+        promoteClasses: async () => {
+            const res = await fetch(`${API_URL}/hod/classes/promote`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return res.json();
+        },
+        undoPromoteClasses: async () => {
+            const res = await fetch(`${API_URL}/hod/classes/promote/undo`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return res.json();
         }
     }
 };

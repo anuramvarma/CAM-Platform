@@ -21,6 +21,9 @@ router.delete('/permissions/:id', authMiddleware, hodController.deletePermission
 
 router.get('/crs', authMiddleware, hodController.getCRs);
 router.post('/crs/approve', authMiddleware, hodController.approveCR);
-router.delete('/crs/:id', authMiddleware, hodController.deleteUser);
+router.delete('/crs/:id', authMiddleware, hodController.deleteUser); // Existing
+
+router.post('/classes/promote', authMiddleware, hodController.promoteClasses);
+router.post('/classes/promote/undo', authMiddleware, hodController.undoPromoteClasses);
 
 module.exports = router;

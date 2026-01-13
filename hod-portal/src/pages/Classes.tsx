@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../services/api';
-import { Users, Lock, Unlock, TrendingUp, Grid, X, Plus, Edit2 } from 'lucide-react';
+import { Users, Lock, Unlock, TrendingUp, Grid, X, Plus, Edit2, RotateCcw, ArrowUpCircle, AlertTriangle } from 'lucide-react';
 
 interface Class {
     id: string;
@@ -26,6 +26,7 @@ export const Classes = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isManageYearOpen, setIsManageYearOpen] = useState(false);
 
     const fetchClasses = async () => {
         try {
@@ -97,9 +98,14 @@ export const Classes = () => {
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">Manage Classes</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Monitor and create department classes</p>
                 </div>
-                <Button onClick={() => setIsCreateOpen(true)} className="shadow-lg hover:shadow-xl transition-all w-full md:w-auto justify-center">
-                    <Plus className="w-5 h-5 mr-2" /> Create New Class
-                </Button>
+                <div className="flex gap-3 w-full md:w-auto">
+                    <Button onClick={() => setIsManageYearOpen(true)} variant="secondary" className="shadow md:w-auto flex-1 justify-center">
+                        <TrendingUp className="w-5 h-5 mr-2" /> Academic Year
+                    </Button>
+                    <Button onClick={() => setIsCreateOpen(true)} className="shadow-lg hover:shadow-xl transition-all md:w-auto flex-1 justify-center">
+                        <Plus className="w-5 h-5 mr-2" /> Create Class
+                    </Button>
+                </div>
             </header>
 
             {Object.keys(groupedClasses).map((year) => (
@@ -138,6 +144,10 @@ export const Classes = () => {
 
             {isCreateOpen && (
                 <CreateClassModal onClose={() => setIsCreateOpen(false)} onSuccess={handleCreateSuccess} />
+            )}
+
+            {isManageYearOpen && (
+                <ManageYearModal onClose={() => setIsManageYearOpen(false)} onSuccess={handleCreateSuccess} />
             )}
         </div>
     );
@@ -330,6 +340,103 @@ const CreateClassModal = ({ onClose, onSuccess }: { onClose: () => void, onSucce
                         </Button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+};
+
+const ManageYearModal = ({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) => {
+    const [loading, setLoading] = useState(false);
+    const [actionType, setActionType] = useState<'promote' | 'undo' | null>(null);
+
+    const handlePromote = async () => {
+        if (!confirm('Are you sure you want to promote ALL classes to the next year? This will update student records and class years.')) return;
+        setLoading(true);
+        setActionType('promote');
+        try {
+            await api.hod.promoteClasses();
+            alert('Academic year promoted successfully!');
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            alert(err.message || 'Failed to promote classes');
+        } finally {
+            setLoading(false);
+            setActionType(null);
+        }
+    };
+
+    const handleUndo = async () => {
+        if (!confirm('Are you sure you want to UNDO the last promotion? This will decrease the academic year for all classes.')) return;
+        setLoading(true);
+        setActionType('undo');
+        try {
+            await api.hod.undoPromoteClasses();
+            alert('Promotion undone successfully!');
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            alert(err.message || 'Failed to undo promotion');
+        } finally {
+            setLoading(false);
+            setActionType(null);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in">
+            <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 dark:border-gray-800 animate-in zoom-in-95">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-indigo-500" /> Academic Year Actions
+                        </h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-lg text-sm flex gap-3 items-start">
+                        <AlertTriangle className="w-5 h-5 shrink-0" />
+                        <p>
+                            Promoting classes will move <strong>Year 1 → 2</strong>, <strong>2 → 3</strong>, etc.
+                            This affects all classes in your department. Ensure the current academic year is complete before proceeding.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <Button
+                            onClick={handlePromote}
+                            disabled={loading}
+                            className={`h-auto py-4 justify-start px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg transform active:scale-95 transition-all ${actionType === 'undo' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <div className="p-2 bg-white/20 rounded-lg mr-4">
+                                <ArrowUpCircle className={`w-6 h-6 ${actionType === 'promote' ? 'animate-bounce' : ''}`} />
+                            </div>
+                            <div className="text-left">
+                                <div className="font-bold text-lg">{actionType === 'promote' ? 'Promoting Classes...' : 'Promote to Next Year'}</div>
+                                <div className="text-indigo-100 text-xs font-normal">Move all classes forward (e.g. Sem 2 -&gt; Sem 3)</div>
+                            </div>
+                        </Button>
+
+                        <Button
+                            onClick={handleUndo}
+                            disabled={loading}
+                            variant="secondary"
+                            className={`h-auto py-4 justify-start px-6 border-2 border-dashed border-gray-300 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 hover:border-red-300 dark:hover:border-red-800 group transition-all ${actionType === 'promote' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg mr-4 group-hover:bg-red-100 dark:group-hover:bg-red-900/30 transition-colors">
+                                <RotateCcw className={`w-6 h-6 text-gray-500 group-hover:text-red-500 transition-colors ${actionType === 'undo' ? 'animate-spin' : ''}`} />
+                            </div>
+                            <div className="text-left">
+                                <div className="font-bold text-gray-700 dark:text-gray-200 group-hover:text-red-600 dark:group-hover:text-red-400">{actionType === 'undo' ? 'Restoring Previous Year...' : 'Undo Last Promotion'}</div>
+                                <div className="text-gray-500 text-xs font-normal">Revert the last promotion action (Emergency use)</div>
+                            </div>
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );
