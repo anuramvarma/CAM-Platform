@@ -53,7 +53,7 @@ const ClassUsersList: React.FC = () => {
                 </h3>
                 <Button variant="secondary" onClick={fetchUsers} disabled={loading} size="sm">
                     <RefreshCw size={14} className={`${loading ? 'animate-spin' : ''} mr-1`} />
-                    Refresh
+                    Refresh now
                 </Button>
             </div>
 

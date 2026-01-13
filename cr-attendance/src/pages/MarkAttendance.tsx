@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { useToast } from '../context/ToastContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
@@ -8,6 +9,7 @@ import { Lock, Share2, Search, Copy, X, RotateCcw } from 'lucide-react';
 
 export const MarkAttendance: React.FC = () => {
     const { subjects, students, permissions, markAttendance } = useApp();
+    const { showToast } = useToast();
     const navigate = useNavigate();
 
     // Popup State
@@ -140,7 +142,7 @@ export const MarkAttendance: React.FC = () => {
     };
 
     const handleSave = () => {
-        if (!subjectId) return alert('Select a subject!');
+        if (!subjectId) return showToast('Select a subject!', 'error');
 
         const absentees = getAbsentees();
         const perms = students
@@ -162,7 +164,7 @@ export const MarkAttendance: React.FC = () => {
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(generateSummary());
-        alert('Copied to clipboard!');
+        showToast('Copied to clipboard!', 'success');
     };
 
     const shareWhatsApp = () => {

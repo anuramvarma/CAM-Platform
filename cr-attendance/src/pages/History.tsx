@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useToast } from '../context/ToastContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { format, parseISO } from 'date-fns';
@@ -8,6 +9,7 @@ import { Button } from '../components/ui/Button';
 
 export const History: React.FC = () => {
     const { history, subjects, fetchData } = useApp();
+    const { showToast } = useToast();
     const [filterDate, setFilterDate] = useState('');
     const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -64,7 +66,7 @@ LE:${leValue || '0'}`
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        alert('Copied to clipboard!');
+        showToast('Copied to clipboard!', 'success');
     };
 
     return (
@@ -73,7 +75,7 @@ LE:${leValue || '0'}`
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Attendance History</h1>
                 <Button variant="secondary" size="sm" onClick={handleRefresh} disabled={refreshing}>
                     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                    Refresh
+                    Refresh data
                 </Button>
             </div>
 

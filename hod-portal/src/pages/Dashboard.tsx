@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { api } from '../services/api';
-import { Users, UserCheck, UserX, FileText, RefreshCw, GraduationCap, UserPlus, ArrowLeft, Download, FileSpreadsheet } from 'lucide-react';
+import { Users, UserCheck, UserX, FileText, RefreshCw, GraduationCap, UserPlus, ArrowLeft, Download, FileSpreadsheet, Copy } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -121,7 +121,7 @@ export const Dashboard = () => {
             }
         });
 
-        doc.save(`Daily_Attendance_${new Date().toISOString().split('T')[0]}.pdf`);
+        doc.save(`Today_Attendance_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
     const [viewMode, setViewMode] = useState<'DAILY' | 'STATS'>('DAILY');
@@ -164,7 +164,7 @@ export const Dashboard = () => {
         fetchStats();
     }, []);
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading dashboard...</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500">Loading the data to display on dashboard...</div>;
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
 
     const cards = [
@@ -177,7 +177,7 @@ export const Dashboard = () => {
     // Compute Year-wise Stats for Daily View
     const yearStats: Record<number, { total: number, present: number, absent: number, permissions: number }> = {};
     // Compute Year-wise Stats for Statistics View (Strategic)
-    const yearStrategicStats: Record<number, { total: number, regular: number, lateral: number }> = {};
+    const yearStrategicStats: Record<number, { total: number, regular: number, lateral: number, sectionCount: number }> = {};
 
     if (stats?.classSummary) {
         stats.classSummary.forEach((cls: any) => {
@@ -194,11 +194,12 @@ export const Dashboard = () => {
 
             // Strategic Stats
             if (!yearStrategicStats[year]) {
-                yearStrategicStats[year] = { total: 0, regular: 0, lateral: 0 };
+                yearStrategicStats[year] = { total: 0, regular: 0, lateral: 0, sectionCount: 0 };
             }
             yearStrategicStats[year].total += cls.totalStudents || 0;
             yearStrategicStats[year].regular += cls.regularCount || 0;
             yearStrategicStats[year].lateral += cls.lateralCount || 0;
+            yearStrategicStats[year].sectionCount += 1;
         });
     }
 
@@ -344,17 +345,39 @@ export const Dashboard = () => {
                                             <th className="px-6 py-4 font-medium text-green-600 dark:text-green-400">Presentees</th>
                                             <th className="px-6 py-4 font-medium text-red-600 dark:text-red-400">Absentees</th>
                                             <th className="px-6 py-4 font-medium text-blue-600 dark:text-blue-400">Active Permissions</th>
+                                            <th className="px-6 py-4 font-medium text-indigo-600 dark:text-indigo-400">Overall</th>
                                             <th className="px-6 py-4 font-medium">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                         {stats?.classSummary?.map((cls: any) => (
-                                            <tr key={cls.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                            <tr key={cls.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
                                                 <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{cls.className}</td>
                                                 <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{cls.totalStudents}</td>
                                                 <td className="px-6 py-4 text-green-600 dark:text-green-400 font-medium">{cls.present}</td>
                                                 <td className="px-6 py-4 text-red-600 dark:text-red-400 font-medium">{cls.absent}</td>
                                                 <td className="px-6 py-4 text-blue-600 dark:text-blue-400 font-medium">{cls.permissionsCount || 0}</td>
+                                                <td className="px-6 py-4 font-mono font-bold text-gray-800 dark:text-gray-200">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{cls.present}/{cls.totalStudents}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const date = new Date();
+                                                                const d = String(date.getDate()).padStart(2, '0');
+                                                                const m = String(date.getMonth() + 1).padStart(2, '0');
+                                                                const y = date.getFullYear();
+                                                                const formattedDate = `${d}-${m}-${y}`;
+                                                                const text = `${formattedDate}:\n${cls.className} : ${cls.present}/${cls.totalStudents}.`;
+                                                                navigator.clipboard.writeText(text);
+                                                                alert('Copied to clipboard');
+                                                            }}
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md text-gray-500"
+                                                            title="Copy Status"
+                                                        >
+                                                            <Copy size={14} />
+                                                        </button>
+                                                    </div>
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${cls.status === 'Marked'
                                                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -367,7 +390,7 @@ export const Dashboard = () => {
                                         ))}
                                         {stats?.classSummary?.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                                                     No classes found.
                                                 </td>
                                             </tr>
@@ -485,11 +508,9 @@ export const Dashboard = () => {
                                                             {year === 1 ? '1st' : year === 2 ? '2nd' : year === 3 ? '3rd' : `${year}th`} Year
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="font-bold text-gray-800 dark:text-gray-200 w-8">{data.total}</span>
-                                                                <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden max-w-[100px]">
-                                                                    <div style={{ width: '100%' }} className="h-full bg-gray-400/50" />
-                                                                </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold text-gray-900 dark:text-white text-lg">{data.total}</span>
+                                                                <span className="text-xs text-gray-400">{data.sectionCount} Section{data.sectionCount !== 1 ? 's' : ''}</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">

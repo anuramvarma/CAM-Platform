@@ -50,7 +50,7 @@ export const Students: React.FC = () => {
                 <div className="flex gap-2">
                     <Button onClick={handleRefresh} variant="ghost" disabled={isRefreshing}>
                         <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''} mr-2`} />
-                        Refresh
+                        Refresh data
                     </Button>
                     <Button onClick={() => setIsAdding(!isAdding)} variant="secondary">
                         <UserPlus size={18} className="mr-2" />

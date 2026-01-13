@@ -1,4 +1,4 @@
-// const API_URL = 'http://localhost:5001/api';
+//const API_URL = 'http://localhost:5001/api';
 const API_URL = 'https://cam-platform.onrender.com/api';
 
 const getHeaders = () => {
@@ -12,6 +12,28 @@ const getHeaders = () => {
 // Helper to map MongoDB _id to frontend id
 const mapId = (item: any) => ({ ...item, id: item._id || item.id });
 
+// Helper to handle requests and Auth errors
+const request = async (endpoint: string, options: RequestInit = {}) => {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+            ...getHeaders(),
+            ...options.headers
+        }
+    });
+
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Unknown Error' }));
+        // Auto-logout on Invalid Token (400) or Access Denied (401)
+        if (res.status === 401 || (res.status === 400 && error.message === 'Invalid Token')) {
+            localStorage.removeItem('token');
+            window.location.href = '/login'; // Force redirect
+        }
+        throw error;
+    }
+    return res.json();
+};
+
 export const api = {
     auth: {
         login: async (credentials: any) => {
@@ -24,9 +46,7 @@ export const api = {
             return res.json();
         },
         getProfile: async () => {
-            const res = await fetch(`${API_URL}/auth/me`, { headers: getHeaders() });
-            if (!res.ok) throw await res.json();
-            return res.json();
+            return request('/auth/me');
         }
     },
     // Add HoD specific endpoints here as we build them
@@ -47,30 +67,26 @@ export const api = {
             }
             const data = await res.json();
             return Array.isArray(data) ? data.map(mapId) : [];
-        }
+        },
+        // Using existing manual fetch for now to minimize changes in less critical parts
     },
     students: {
         getAll: async () => {
-            const res = await fetch(`${API_URL}/students`, { headers: getHeaders() });
-            const data = await res.json();
+            const data = await request('/students');
             return Array.isArray(data) ? data.map(mapId) : [];
         },
         // HoD needs to manage all students.
     },
     permissions: {
         getAll: async () => {
-            const res = await fetch(`${API_URL}/permissions/all`, { headers: getHeaders() }); // HoD needs ALL permissions
-            if (!res.ok) throw await res.json();
-            const data = await res.json();
+            const data = await request('/permissions/all');
             return Array.isArray(data) ? data.map(mapId) : [];
         }
     },
     hod: {
         // Specific HoD actions
         getStats: async () => {
-            const res = await fetch(`${API_URL}/hod/stats`, { headers: getHeaders() });
-            if (!res.ok) throw await res.json();
-            return res.json();
+            return request('/hod/stats');
         },
         getClasses: async () => {
             const res = await fetch(`${API_URL}/hod/classes`, { headers: getHeaders() });

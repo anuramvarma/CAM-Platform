@@ -28,6 +28,7 @@ export interface Permission {
     type: 'FULL_DAY' | 'MORNING' | 'AFTERNOON' | 'CUSTOM';
     customPeriods?: number[]; // [1, 2, 3] etc.
     reason: string;
+    approvedBy?: string;
 }
 
 export interface AppSettings {

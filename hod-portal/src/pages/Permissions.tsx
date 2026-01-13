@@ -30,6 +30,9 @@ export const Permissions = () => {
     const [selectedRolls, setSelectedRolls] = useState<string[]>([]);
     const [studentSearch, setStudentSearch] = useState('');
 
+    // Multi-delete Selection
+    const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([]);
+
     useEffect(() => {
         const fetchClasses = async () => {
             try {
@@ -165,8 +168,42 @@ export const Permissions = () => {
         try {
             await api.hod.deletePermission(id);
             setPermissions(permissions.filter(p => p.id !== id));
+            // Remove from selection if present
+            if (selectedPermissionIds.includes(id)) {
+                setSelectedPermissionIds(ids => ids.filter(i => i !== id));
+            }
         } catch (err) {
             alert('Failed to revoke permission');
+        }
+    };
+
+    const togglePermissionSelection = (id: string) => {
+        if (selectedPermissionIds.includes(id)) {
+            setSelectedPermissionIds(prev => prev.filter(pid => pid !== id));
+        } else {
+            setSelectedPermissionIds(prev => [...prev, id]);
+        }
+    };
+
+    const toggleAllPermissions = () => {
+        if (selectedPermissionIds.length === filteredPermissions.length) {
+            setSelectedPermissionIds([]);
+        } else {
+            setSelectedPermissionIds(filteredPermissions.map(p => p.id));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedPermissionIds.length} permissions?`)) return;
+
+        try {
+            await Promise.all(selectedPermissionIds.map(id => api.hod.deletePermission(id)));
+            setPermissions(prev => prev.filter(p => !selectedPermissionIds.includes(p.id)));
+            setSelectedPermissionIds([]);
+            alert('Selected permissions deleted successfully');
+        } catch (err) {
+            console.error(err);
+            alert('Failed to delete some permissions');
         }
     };
 
@@ -389,7 +426,17 @@ export const Permissions = () => {
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="flex items-end pb-0.5">
+                                    <div className="flex flex-col gap-2 justify-end pb-0.5">
+                                        {selectedPermissionIds.length > 0 && (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="w-full bg-red-600 hover:bg-red-700 text-white"
+                                                onClick={handleBulkDelete}
+                                            >
+                                                Delete ({selectedPermissionIds.length})
+                                            </Button>
+                                        )}
                                         <Button
                                             variant="secondary"
                                             size="sm"
@@ -407,6 +454,14 @@ export const Permissions = () => {
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                                         <tr>
+                                            <th className="px-6 py-4 font-medium w-10">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filteredPermissions.length > 0 && selectedPermissionIds.length === filteredPermissions.length}
+                                                    onChange={toggleAllPermissions}
+                                                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                                                />
+                                            </th>
                                             <th className="px-6 py-4 font-medium">Student</th>
                                             <th className="px-6 py-4 font-medium">Dates</th>
                                             <th className="px-6 py-4 font-medium">Type</th>
@@ -417,7 +472,15 @@ export const Permissions = () => {
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                         {filteredPermissions.map(perm => (
-                                            <tr key={perm.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                            <tr key={perm.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${selectedPermissionIds.includes(perm.id) ? 'bg-indigo-50 dark:bg-indigo-900/10' : ''}`}>
+                                                <td className="px-6 py-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedPermissionIds.includes(perm.id)}
+                                                        onChange={() => togglePermissionSelection(perm.id)}
+                                                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 font-mono font-medium text-gray-900 dark:text-white">
                                                     {Array.isArray(perm.studentRoll) ? perm.studentRoll.join(', ') : perm.studentRoll}
                                                 </td>
@@ -467,7 +530,7 @@ export const Permissions = () => {
                                         ))}
                                         {filteredPermissions.length === 0 && (
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                                                     No permissions match your filters.
                                                 </td>
                                             </tr>

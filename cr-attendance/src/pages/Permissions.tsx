@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Trash2, Calendar, Edit2, Info, Users, Copy, RefreshCw, ListChecks, Type } from 'lucide-react';
+import { Trash2, Calendar, Edit2, Info, Users, Copy, RefreshCw, ListChecks, Type, ShieldCheck } from 'lucide-react';
 import { Permission } from '../types';
 import { useToast } from '../context/ToastContext';
 
@@ -282,7 +282,7 @@ export const Permissions: React.FC = () => {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Permissions</h1>
                 <Button onClick={handleRefresh} variant="ghost" size="sm" disabled={isRefreshing}>
                     <RefreshCw size={18} className={`${isRefreshing ? 'animate-spin' : ''} mr-2`} />
-                    Refresh
+                    Refresh data
                 </Button>
             </div>
 
@@ -521,19 +521,28 @@ export const Permissions: React.FC = () => {
                                         typeLabel = `P: ${group.customPeriods.join(',')}`;
                                     }
 
+                                    const isHodApproved = group.permissions.some(p => p.approvedBy === 'HOD');
+
                                     return (
                                         <div
                                             key={group.key}
                                             onClick={() => setViewingGroup(group)}
-                                            className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-700 transition-all cursor-pointer group relative overflow-hidden"
+                                            className={`bg-white dark:bg-gray-900 p-4 rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden ${isHodApproved ? 'border-indigo-200 dark:border-indigo-800' : 'border-gray-200 dark:border-gray-800'}`}
                                         >
-                                            <div className="bg-indigo-50 dark:bg-indigo-900/30 w-full absolute top-0 left-0 h-1" />
+                                            <div className={`w-full absolute top-0 left-0 h-1 ${isHodApproved ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
 
-                                            <div className="flex justify-between items-start mb-2 mt-1">
+                                            <div className="flex justify-between items-start mb-2 mt-2">
                                                 <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 line-clamp-1" title={group.reason}>{group.reason}</h3>
-                                                <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide shrink-0 ${group.type === 'CUSTOM' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
-                                                    {typeLabel}
-                                                </span>
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide shrink-0 ${group.type === 'CUSTOM' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
+                                                        {typeLabel}
+                                                    </span>
+                                                    {isHodApproved && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800">
+                                                            <ShieldCheck size={10} /> HOD
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
@@ -562,8 +571,13 @@ export const Permissions: React.FC = () => {
                     <Card className="w-full max-w-sm bg-white dark:bg-gray-900 shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh] overflow-hidden rounded-xl">
 
                         {/* Header */}
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-800 shrink-0 relative">
                             <h3 className="font-bold text-center text-lg text-gray-900 dark:text-white">Permission Details</h3>
+                            {viewingGroup.permissions.some(p => p.approvedBy === 'HOD') && (
+                                <div className="absolute top-4 right-4 text-indigo-600 dark:text-indigo-400" title="Approved by HOD">
+                                    <ShieldCheck size={20} />
+                                </div>
+                            )}
                         </div>
 
                         {/* Content */}
@@ -603,8 +617,9 @@ export const Permissions: React.FC = () => {
                                 </div>
                                 <div className="flex flex-wrap justify-center gap-1.5 max-h-40 overflow-y-auto">
                                     {viewingGroup.permissions.map(p => (
-                                        <span key={p.id} className="text-xs bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 px-2 py-1 rounded text-gray-700 dark:text-gray-300">
+                                        <span key={p.id} className={`text-xs border px-2 py-1 rounded ${p.approvedBy === 'HOD' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}>
                                             {p.studentRoll}
+                                            {p.approvedBy === 'HOD' && '*'}
                                         </span>
                                     ))}
                                 </div>
