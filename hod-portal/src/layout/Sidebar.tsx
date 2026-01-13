@@ -47,8 +47,8 @@ export const Sidebar = () => {
 
     const links = [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/classes', label: 'Classes', icon: School },
         { to: '/permissions', label: 'Permissions', icon: FileSignature },
+        { to: '/classes', label: 'Classes', icon: School },
         { to: '/students', label: 'Students Info', icon: Users },
         { to: '/crs', label: 'Manage CRs', icon: UserCog },
         { to: '/profile', label: 'My Profile', icon: Users }, // Using Users icon as a placeholder or reuse UserCog
