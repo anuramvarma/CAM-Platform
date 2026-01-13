@@ -385,7 +385,7 @@ export const Dashboard = () => {
                                 return (
                                     <div key={year} className="space-y-3 animate-in slide-in-from-left-2">
                                         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800 pb-2">
-                                            {year === 1 ? '1st' : year === 2 ? '2nd' : year === 3 ? '3rd' : `${year}th`} Year
+                                            {year === 1 ? 'I' : year === 2 ? 'II' : year === 3 ? 'III' : `IV`} B.Tech
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                             <Card className="p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-900/50">
