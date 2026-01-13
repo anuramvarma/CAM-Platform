@@ -313,6 +313,11 @@ export const Dashboard = () => {
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
                         {viewMode === 'DAILY' ? "Today's overall department status" : "Strategic academic analytics"}
                     </p>
+                    {viewMode === 'DAILY' && (
+                        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium">
+                            Date : {new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}
+                        </p>
+                    )}
                 </div>
                 <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
