@@ -266,7 +266,7 @@ export const Dashboard = () => {
                 setStats(null);
                 setError('No analytics data recorded for this date.');
             } else {
-                setError('Failed to load dashboard data.');
+                setError(err.error || err.message || 'Failed to load dashboard data. No Data found for this date.');
             }
         } finally {
             setLoading(false);

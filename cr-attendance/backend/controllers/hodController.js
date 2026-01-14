@@ -736,7 +736,10 @@ exports.undoPromoteClasses = async (req, res) => {
 exports.getAnalyticsHistory = async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);
-        if (!user.department) return res.status(403).json({ error: 'No department assigned' });
+        if (!user.department) {
+            console.warn(`[HoD] Access Denied: User ${req.user.userId} has no department assigned.`);
+            return res.status(403).json({ error: 'No department assigned' });
+        }
 
         const { date } = req.query; // YYYY-MM-DD
         if (!date) return res.status(400).json({ error: 'Date is required' });
