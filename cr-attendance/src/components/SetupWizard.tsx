@@ -158,21 +158,28 @@ export const SetupWizard: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                         <Input
-                            label="Start Roll No"
-                            placeholder="23PA1A0501"
-                            value={formData.startRoll}
-                            onChange={e =>
-                                setFormData({ ...formData, startRoll: e.target.value })
-                            }
-                        />
-                        <Input
-                            label="End Roll No"
-                            placeholder="23PA1A0560"
-                            value={formData.endRoll}
-                            onChange={e =>
-                                setFormData({ ...formData, endRoll: e.target.value })
-                            }
-                        />
+    label="Start Roll No"
+    placeholder="23PA1A0501"
+    value={formData.startRoll}
+    onChange={e =>
+        setFormData({
+            ...formData,
+            startRoll: e.target.value.toUpperCase()
+        })
+    }
+/>
+
+<Input
+    label="End Roll No"
+    placeholder="23PA1A0560"
+    value={formData.endRoll}
+    onChange={e =>
+        setFormData({
+            ...formData,
+            endRoll: e.target.value.toUpperCase()
+        })
+    }
+/>
                     </div>
 
                     {formData.yearOfStudy !== '1' && (
@@ -194,21 +201,22 @@ export const SetupWizard: React.FC = () => {
                             {formData.lateralDetails.enabled && (
                                 <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                                     <Input
-                                        label="Lateral Start Roll"
-                                        placeholder="24PA5A0501"
-                                        value={formData.lateralDetails.startRoll}
-                                        onChange={e =>
-                                            updateLateral('startRoll', e.target.value)
-                                        }
-                                    />
-                                    <Input
-                                        label="Lateral End Roll"
-                                        placeholder="24PA5A0510"
-                                        value={formData.lateralDetails.endRoll}
-                                        onChange={e =>
-                                            updateLateral('endRoll', e.target.value)
-                                        }
-                                    />
+    label="Lateral Start Roll"
+    placeholder="24PA5A0501"
+    value={formData.lateralDetails.startRoll}
+    onChange={e =>
+        updateLateral('startRoll', e.target.value.toUpperCase())
+    }
+/>
+
+<Input
+    label="Lateral End Roll"
+    placeholder="24PA5A0510"
+    value={formData.lateralDetails.endRoll}
+    onChange={e =>
+        updateLateral('endRoll', e.target.value.toUpperCase())
+    }
+/>
                                 </div>
                             )}
                         </div>
