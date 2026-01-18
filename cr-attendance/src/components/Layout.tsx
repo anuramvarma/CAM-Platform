@@ -17,10 +17,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
     const navItems = [
         { label: 'Home', path: '/', icon: Home },
-        { label: 'Manage Subjects', path: '/subjects', icon: BookOpen },
-        { label: 'Manage Students', path: '/students', icon: Users },
-        { label: 'Manage Permissions', path: '/permissions', icon: Calendar },
-        { label: 'History', path: '/history', icon: Clock },
+        { label: 'Our Subjects', path: '/subjects', icon: BookOpen },
+        { label: 'Students Info ', path: '/students', icon: Users },
+        { label: 'Permissions', path: '/permissions', icon: Calendar },
+        { label: 'History ', path: '/history', icon: Clock },
         { label: 'Misc', path: '/misc', icon: MoreHorizontal },
     ];
 
