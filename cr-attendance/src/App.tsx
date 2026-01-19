@@ -14,6 +14,7 @@ import { Students } from './pages/Students';
 import { Permissions } from './pages/Permissions';
 import { History } from './pages/History';
 import { MarkAttendance } from './pages/MarkAttendance';
+import { Help } from './pages/Help';
 
 import { PendingApproval } from './components/PendingApproval';
 import { Misc } from './pages/Misc';
@@ -42,6 +43,7 @@ const AppRoutes = () => {
                 <Route path="/permissions" element={<Permissions />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/mark" element={<MarkAttendance />} />
+                <Route path="/help" element={<Help />} />
                 <Route path="/misc" element={<Misc />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-    Menu, X, Home, BookOpen, Users, Calendar, Clock, LogOut, User, Moon, Sun, MoreHorizontal
+    Menu, X, Home, BookOpen, Users, Calendar, Clock, LogOut, User, Moon, Sun, MoreHorizontal, HelpCircle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ProfileModal } from './ProfileModal';
@@ -17,10 +17,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
     const navItems = [
         { label: 'Home', path: '/', icon: Home },
-        { label: 'Manage Subjects', path: '/subjects', icon: BookOpen },
-        { label: 'Manage Students', path: '/students', icon: Users },
-        { label: 'Manage Permissions', path: '/permissions', icon: Calendar },
+        { label: 'Our Subjects', path: '/subjects', icon: BookOpen },
+        { label: 'Students Info', path: '/students', icon: Users },
+        { label: 'Permissions', path: '/permissions', icon: Calendar },
         { label: 'History', path: '/history', icon: Clock },
+        { label: 'Help', path: '/help', icon: HelpCircle },
         { label: 'Misc', path: '/misc', icon: MoreHorizontal },
     ];
 
@@ -62,7 +63,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           fixed inset-y-0 left-0 w-64 z-50 transform transition-transform duration-300
           bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 lg:static
+          lg:translate-x-0
         `}
             >
                 <div className="h-full flex flex-col">
@@ -151,7 +152,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 pt-14 lg:pt-0 min-w-0">
+            <main className="flex-1 pt-14 lg:pt-0 lg:ml-64 min-w-0">
                 <div className="p-4 lg:p-8 max-w-5xl mx-auto">
                     {children}
                 </div>

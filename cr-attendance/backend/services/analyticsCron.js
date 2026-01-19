@@ -6,6 +6,14 @@ const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
 const Permission = require('../models/Permission');
 
+const getRomanYear = (year) => {
+    if (year == 1) return 'I';
+    if (year == 2) return 'II';
+    if (year == 3) return 'III';
+    if (year == 4) return 'IV';
+    return year;
+};
+
 const calculateAndSaveAnalytics = async () => {
     console.log('[Cron] Starting Daily Analytics Snapshot...');
     // Use current date in India/local time implied by server, usually UTC or local. 
@@ -86,7 +94,7 @@ const calculateAndSaveAnalytics = async () => {
 
                 classSummary.push({
                     id: cls._id.toString(),
-                    className: `${cls.yearOfStudy}-${cls.dept}-${cls.section}`,
+                    className: `${getRomanYear(cls.yearOfStudy)}.${cls.dept}-${cls.section}`,
                     year: cls.yearOfStudy,
                     dept: cls.dept,
                     totalStudents: studentCount,
@@ -98,6 +106,9 @@ const calculateAndSaveAnalytics = async () => {
                     status
                 });
             }
+
+            // Sort classSummary alphabetically by className (A, B, C...)
+            classSummary.sort((a, b) => a.className.localeCompare(b.className));
 
             // Save to DB
             const newData = {

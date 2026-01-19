@@ -449,7 +449,7 @@ export const Dashboard = () => {
 
                         <div className="mt-8">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Class-wise Strength Summary</h2>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Today's Class-wise Attendance Summary</h2>
                                 <div className="flex gap-2">
                                     {<Button
                                         variant="secondary"
@@ -459,7 +459,7 @@ export const Dashboard = () => {
                                         disabled={!stats}
                                     >
                                         <FileSpreadsheet size={16} className="mr-2" />
-                                        Excel
+                                        View in Excel
                                     </Button>}
                                     <Button
                                         variant="secondary"
@@ -469,7 +469,7 @@ export const Dashboard = () => {
                                         disabled={!stats}
                                     >
                                         <Download size={16} className="mr-2" />
-                                        PDF
+                                        Get as PDF
                                     </Button>
                                     <Button
                                         variant="secondary"
@@ -489,7 +489,7 @@ export const Dashboard = () => {
                                         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
                                             <tr>
                                                 <th className="px-6 py-4 font-medium">Year</th>
-                                                <th className="px-6 py-4 font-medium">Class Name</th>
+                                                <th className="px-6 py-4 font-medium">Class name</th>
                                                 <th className="px-6 py-4 font-medium">Total Strength</th>
                                                 <th className="px-6 py-4 font-medium text-green-600 dark:text-green-400">Presentees</th>
                                                 <th className="px-6 py-4 font-medium text-red-600 dark:text-red-400">Absentees</th>
