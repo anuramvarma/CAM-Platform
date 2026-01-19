@@ -29,6 +29,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import type { } from '@mui/x-date-pickers/themeAugmentation';
 import dayjs, { Dayjs } from 'dayjs';
 
 export const Register = () => {
