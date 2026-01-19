@@ -16,8 +16,26 @@ router.post('/class/setup', setupController.setupClass);
 router.get('/class/me', setupController.getClassDetails);
 
 // Attendance
-router.post('/attendance', attendanceController.markAttendance);
+router.post('/attendance', (req, res, next) => {
+    console.log('📝 POST /attendance request received');
+    attendanceController.markAttendance(req, res, next);
+});
+
+router.put('/attendance/:id', (req, res, next) => {
+    console.log(`✏️ PUT /attendance/${req.params.id} request received`);
+    attendanceController.updateAttendance(req, res, next);
+});
+
 router.get('/history', attendanceController.getHistory);
+
+// Catch all for /attendance to help debug
+router.all('/attendance*', (req, res) => {
+    console.warn(`🚨 Unhandled /attendance request: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({
+        message: 'Attendance API endpoint not found',
+        received: { method: req.method, url: req.originalUrl }
+    });
+});
 
 // Subjects
 router.get('/subjects', subjectController.getSubjects);

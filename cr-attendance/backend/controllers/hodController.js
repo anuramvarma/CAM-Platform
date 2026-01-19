@@ -225,10 +225,16 @@ exports.getStats = async (req, res) => {
             endDate: { $gte: today }
         });
 
-        // 3. Attendance Stats (First attendance found per class)
-        // We only care about attendance for our classes
-        const todaysAttendance = await Attendance.find({ date: today, classId: { $in: classIds } })
-            .sort({ createdAt: 1 });
+        const { period } = req.query; // "1", "2", ... or undefined for "ALL"
+
+        // 3. Attendance Stats
+        let query = { date: today, classId: { $in: classIds } };
+        if (period && period !== 'ALL') {
+            query.period = period;
+        }
+
+        const todaysAttendance = await Attendance.find(query)
+            .sort({ createdAt: -1 });
 
         const classAttendanceMap = {};
         todaysAttendance.forEach(record => {
@@ -251,11 +257,26 @@ exports.getStats = async (req, res) => {
             const record = classAttendanceMap[cls._id.toString()];
 
             // Count Active Permissions for this class
-            const permissionsCount = await Permission.countDocuments({
+            let permQuery = {
                 classId: cls._id,
                 startDate: { $lte: today },
                 endDate: { $gte: today }
-            });
+            };
+
+            if (period && period !== 'ALL') {
+                const pNum = parseInt(period);
+                const isMorning = pNum <= 4;
+                permQuery.$or = [
+                    { type: 'FULL_DAY' },
+                    { type: 'CUSTOM', customPeriods: period.toString() }
+                ];
+                if (isMorning) {
+                    permQuery.$or.push({ type: 'MORNING' });
+                } else {
+                    permQuery.$or.push({ type: 'AFTERNOON' });
+                }
+            }
+            const permissionsCount = await Permission.countDocuments(permQuery);
 
             let absent = 0;
             let present = 0;
@@ -281,7 +302,8 @@ exports.getStats = async (req, res) => {
                 present,
                 absent,
                 permissionsCount,
-                status
+                status,
+                markedPeriod: record ? record.period : null
             });
         }
 
@@ -768,6 +790,134 @@ exports.getAnalyticsHistory = async (req, res) => {
 
     } catch (err) {
         console.error('HoD History Error:', err);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+exports.getComparison = async (req, res) => {
+    try {
+        const { date, classId, periodA, periodB } = req.query;
+        if (!date || !classId || !periodA || !periodB) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        // 1. Fetch class and all students
+        const cls = await Class.findById(classId);
+        if (!cls) return res.status(404).json({ error: 'Class not found' });
+
+        const students = await Student.find({ classId });
+        const studentMap = {};
+        students.forEach(s => {
+            studentMap[s.rollNumber] = s.name || 'Unknown';
+        });
+
+        // 2. Fetch attendance for both periods
+        const attnA = await Attendance.findOne({ classId, date, period: periodA });
+        const attnB = await Attendance.findOne({ classId, date, period: periodB });
+
+        const absA = attnA ? attnA.absentees : [];
+        const absB = attnB ? attnB.absentees : [];
+
+        // Logic: 
+        // Present in A = Students NOT in absA
+        // Absent in B = Students IN absB
+        // Present in A AND Absent in B = absB.filter(roll => !absA.includes(roll))
+        const leftRolls = absB.filter(roll => !absA.includes(roll));
+        const cameRolls = absA.filter(roll => !absB.includes(roll));
+
+        const leftStudents = leftRolls.map(roll => ({ roll, name: studentMap[roll] }));
+        const cameStudents = cameRolls.map(roll => ({ roll, name: studentMap[roll] }));
+
+        res.json({
+            classInfo: {
+                name: `${cls.yearOfStudy}-${cls.dept}-${cls.section}`,
+                total: students.length
+            },
+            periodA: {
+                count: students.length - absA.length,
+                marked: !!attnA
+            },
+            periodB: {
+                count: students.length - absB.length,
+                marked: !!attnB
+            },
+            leftStudents,
+            cameStudents
+        });
+
+    } catch (err) {
+        console.error('Comparison Error:', err);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+exports.getRegister = async (req, res) => {
+    try {
+        const { date, classId } = req.query;
+        if (!date || !classId) {
+            return res.status(400).json({ error: 'Date and Class are required' });
+        }
+
+        // 1. Fetch Class and Students
+        const cls = await Class.findById(classId);
+        if (!cls) return res.status(404).json({ error: 'Class not found' });
+
+        const students = await Student.find({ classId }).sort({ rollNumber: 1 });
+
+        // 2. Fetch All Attendance for that day/class
+        const records = await Attendance.find({ classId, date });
+
+        // Map by period for easy lookup
+        const periodMap = {};
+        records.forEach(r => {
+            periodMap[r.period] = r.absentees;
+        });
+
+        // 3. Build Registry Matrix
+        const register = students.map((s, idx) => {
+            const studentData = {
+                sNo: idx + 1,
+                rollNumber: s.rollNumber,
+                name: s.name,
+                attendance: {}
+            };
+
+            // Periods 1-8
+            for (let p = 1; p <= 8; p++) {
+                const absentees = periodMap[p.toString()];
+                if (absentees === undefined) {
+                    studentData.attendance[p] = '-'; // Not marked
+                } else if (absentees.includes(s.rollNumber)) {
+                    studentData.attendance[p] = 'A';
+                } else {
+                    studentData.attendance[p] = 'P';
+                }
+            }
+            return studentData;
+        });
+
+        // 4. Calculate Summary (Presentees per period)
+        const summary = {};
+        for (let p = 1; p <= 8; p++) {
+            const absentees = periodMap[p.toString()];
+            if (absentees === undefined) {
+                summary[p] = null;
+            } else {
+                summary[p] = students.length - absentees.length;
+            }
+        }
+
+        res.json({
+            classInfo: {
+                name: `${cls.yearOfStudy}-${cls.dept}-${cls.section}`,
+                totalStudents: students.length
+            },
+            summary,
+            register
+        });
+
+    } catch (err) {
+        console.error('Register Error:', err);
         res.status(500).json({ error: 'Server Error' });
     }
 };

@@ -55,7 +55,8 @@ const calculateAndSaveAnalytics = async () => {
             });
 
             // 3. Attendance Stats
-            const todaysAttendance = await Attendance.find({ date: today, classId: { $in: classIds } });
+            const todaysAttendance = await Attendance.find({ date: today, classId: { $in: classIds } })
+                .sort({ createdAt: -1 });
             const classAttendanceMap = {};
             todaysAttendance.forEach(record => {
                 if (!classAttendanceMap[record.classId.toString()]) {
@@ -103,7 +104,8 @@ const calculateAndSaveAnalytics = async () => {
                     present,
                     absent,
                     permissionsCount,
-                    status
+                    status,
+                    markedPeriod: record ? record.period : null
                 });
             }
 

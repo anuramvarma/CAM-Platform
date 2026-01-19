@@ -4,12 +4,14 @@ import { useToast } from '../context/ToastContext';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, Copy, X, RefreshCw } from 'lucide-react';
+import { ChevronRight, Copy, X, RefreshCw, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 
 export const History: React.FC = () => {
-    const { history, subjects, fetchData } = useApp();
+    const { history, subjects, students, fetchData } = useApp();
     const { showToast } = useToast();
+    const navigate = useNavigate();
     const [filterDate, setFilterDate] = useState('');
     const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -40,27 +42,29 @@ export const History: React.FC = () => {
 
         const formattedDate = format(parseISO(record.date), 'dd/MM/yyyy');
 
-        let leValue = '';
+        const absentees = record.absentees || [];
 
-        const studentAbsentees = record.absentees
-            .filter((roll: string) => {
-                // ✅ LE roll starts with 24PA5A05 and ends with digits
-                if (/^24PA5A05\d+$/.test(roll)) {
-                    leValue = roll.slice(-2); // extract 18 from 24PA5A0518
-                    return false;
-                }
-                return true;
-            })
-            .map((roll: string) => roll.slice(-2)) // C9, D6...
-            .sort();
+        const regulars = absentees.filter((roll: string) => {
+            const student = students.find(s => s.rollNumber === roll);
+            if (student) return student.type !== 'LATERAL';
+            // Fallback for current batch if student not found in list
+            return !/^24PA5A05\d+$/.test(roll);
+        }).map(getShortRoll).sort();
+
+        const laterals = absentees.filter((roll: string) => {
+            const student = students.find(s => s.rollNumber === roll);
+            if (student) return student.type === 'LATERAL';
+            // Fallback for current batch if student not found in list
+            return /^24PA5A05\d+$/.test(roll);
+        }).map(getShortRoll).sort();
 
         return (
             `Date: ${formattedDate}
 Subject: ${subjectName}
 Period: ${record.period}
 
-Absentees: ${studentAbsentees.length ? studentAbsentees.join(', ') : 'Nil'}
-LE:${leValue || '0'}`
+Absentees: ${regulars.length ? regulars.join(', ') : 'Nil'}
+LE : ${laterals.length ? laterals.join(', ') : 'Nil'}`
         );
     };
 
@@ -164,24 +168,60 @@ LE:${leValue || '0'}`
                             </div>
 
                             {/* Absentees List */}
-                            <div>
-                                <div className="flex justify-between items-end mb-3">
-                                    <label className="text-xs text-gray-400 uppercase font-bold tracking-wider">Absentees ({selectedRecord.absentees.length})</label>
+                            <div className="space-y-4">
+                                {/* Regular Absentees */}
+                                <div>
+                                    <div className="flex justify-between items-end mb-2">
+                                        <label className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Regular Absentees</label>
+                                    </div>
+                                    {selectedRecord.absentees.filter((roll: string) => {
+                                        const s = students.find(st => st.rollNumber === roll);
+                                        return s ? s.type !== 'LATERAL' : !/^24PA5A05\d+$/.test(roll);
+                                    }).length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {selectedRecord.absentees
+                                                .filter((roll: string) => {
+                                                    const s = students.find(st => st.rollNumber === roll);
+                                                    return s ? s.type !== 'LATERAL' : !/^24PA5A05\d+$/.test(roll);
+                                                })
+                                                .sort()
+                                                .map((roll: string) => (
+                                                    <span key={roll} className="px-2 py-1 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded text-sm font-mono font-bold border border-red-100 dark:border-red-900/50">
+                                                        {getShortRoll(roll)}
+                                                    </span>
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Nil</p>
+                                    )}
                                 </div>
 
-                                {selectedRecord.absentees.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {[...selectedRecord.absentees].sort().map((roll: string) => (
-                                            <span key={roll} className="px-3 py-1.5 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-sm font-mono font-medium border border-red-100 dark:border-red-900/50">
-                                                {roll}
-                                            </span>
-                                        ))}
+                                {/* LE Absentees */}
+                                <div>
+                                    <div className="flex justify-between items-end mb-2">
+                                        <label className="text-[10px] text-gray-400 uppercase font-black tracking-widest">LE Absentees</label>
                                     </div>
-                                ) : (
-                                    <div className="p-4 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-lg text-center font-medium border border-emerald-100 dark:border-emerald-900/50">
-                                        🎉 No Absentees! Everyone present.
-                                    </div>
-                                )}
+                                    {selectedRecord.absentees.filter((roll: string) => {
+                                        const s = students.find(st => st.rollNumber === roll);
+                                        return s ? s.type === 'LATERAL' : /^24PA5A05\d+$/.test(roll);
+                                    }).length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {selectedRecord.absentees
+                                                .filter((roll: string) => {
+                                                    const s = students.find(st => st.rollNumber === roll);
+                                                    return s ? s.type === 'LATERAL' : /^24PA5A05\d+$/.test(roll);
+                                                })
+                                                .sort()
+                                                .map((roll: string) => (
+                                                    <span key={roll} className="px-2 py-1 bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 rounded text-sm font-mono font-bold border border-orange-100 dark:border-orange-900/50">
+                                                        {getShortRoll(roll)}
+                                                    </span>
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-gray-400 font-medium">Nil</p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Copy Section */}
@@ -192,6 +232,14 @@ LE:${leValue || '0'}`
                                 >
                                     <Copy size={18} />
                                     Copy Summary
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => navigate('/mark', { state: { editRecord: selectedRecord } })}
+                                    className="w-full flex items-center justify-center gap-2 h-12 text-base mt-3 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300"
+                                >
+                                    <Edit size={18} />
+                                    Edit Absentees
                                 </Button>
                                 <p className="text-center text-xs text-gray-400 mt-3">
                                     Copies formatted summary for WhatsApp

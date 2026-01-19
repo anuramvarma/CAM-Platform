@@ -25,6 +25,7 @@ interface AppContextType {
     updatePermission: (id: string, perm: Partial<Permission>) => Promise<void>;
     deletePermission: (id: string) => Promise<void>;
     markAttendance: (record: AttendanceRecord) => Promise<void>;
+    updateAttendance: (id: string, absentees: string[]) => Promise<void>;
 
 
     fetchData: () => Promise<void>;
@@ -188,6 +189,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchData();
     };
 
+    const updateAttendance = async (id: string, absentees: string[]) => {
+        await api.attendance.update(id, { absentees });
+        // Refresh
+        fetchData();
+    };
+
     const addStudent = async (student: any) => {
         await api.students.add(student);
         const sts = await api.students.getAll();
@@ -220,6 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             updatePermission,
             deletePermission,
             markAttendance,
+            updateAttendance,
             fetchData,
             checkApprovalStatus
         }}>

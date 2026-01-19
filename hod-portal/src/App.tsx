@@ -7,6 +7,8 @@ import { Students } from './pages/Students';
 import { Permissions } from './pages/Permissions';
 import { ManageCRs } from './pages/ManageCRs';
 import { Profile } from './pages/Profile';
+import { Comparison } from './pages/Comparison';
+import { Register } from './pages/Register';
 import { Layout } from './layout/Layout';
 
 const ProtectedRoute = () => {
@@ -31,6 +33,8 @@ function App() {
           <Route path="/students" element={<Students />} />
           <Route path="/permissions" element={<Permissions />} />
           <Route path="/crs" element={<ManageCRs />} />
+          <Route path="/comparison" element={<Comparison />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
       </Routes>

@@ -4,17 +4,22 @@ import { useToast } from '../context/ToastContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Share2, Search, Copy, X, RotateCcw } from 'lucide-react';
 
 export const MarkAttendance: React.FC = () => {
-    const { subjects, students, permissions, markAttendance } = useApp();
+    const { subjects, students, permissions, markAttendance, updateAttendance } = useApp();
     const { showToast } = useToast();
     const navigate = useNavigate();
+    const location = useLocation();
+    const editRecord = location.state?.editRecord;
+
+    console.log('DEBUG: MarkAttendance - editRecord from state:', editRecord);
 
     // Popup State
     const [showPreview, setShowPreview] = useState(false);
     const [showCount, setShowCount] = useState(false);
+    const [showPresentees, setShowPresentees] = useState(false);
     // Form State
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [subjectId, setSubjectId] = useState('');
@@ -27,6 +32,24 @@ export const MarkAttendance: React.FC = () => {
     // If Mode == ABSENTIES, Selected = ABSENT.
     // If Mode == PRESENTEES, Selected = PRESENT.
     const [selectedRolls, setSelectedRolls] = useState<Set<string>>(new Set());
+
+    // Effect to pre-fill data if editing
+    React.useEffect(() => {
+        if (editRecord) {
+            console.log('DEBUG: Initializing Edit Mode with:', editRecord);
+            if (editRecord.date) setDate(editRecord.date);
+
+            // Critical: extract subjectId properly
+            const subId = editRecord.subjectId?._id || editRecord.subjectId;
+            if (subId) setSubjectId(subId);
+
+            if (editRecord.period) setPeriod(editRecord.period.toString());
+            if (Array.isArray(editRecord.absentees)) {
+                setSelectedRolls(new Set(editRecord.absentees));
+            }
+            setMarkingMode('MARK_ABSENTEES');
+        }
+    }, [editRecord]);
 
     // Compute status on the fly
     const getStudentStatus = (roll: string): 'PRESENT' | 'ABSENT' | 'PERMISSION' => {
@@ -110,56 +133,69 @@ export const MarkAttendance: React.FC = () => {
     }, [students, searchTerm]);
 
     const generateSummary = () => {
-        const absentees = getAbsentees(); // List of Roll Numbers
+        const isPresenteesMode = showPresentees;
 
-        const regulars = absentees.filter(roll => {
+        const targetRolls = isPresenteesMode
+            ? students.filter(s => getStudentStatus(s.rollNumber) === 'PRESENT').map(s => s.rollNumber).sort()
+            : getAbsentees();
+
+        const regulars = targetRolls.filter(roll => {
             const s = students.find(st => st.rollNumber === roll);
             return s && s.type !== 'LATERAL';
-        }).map(getShortRoll);
+        }).map(getShortRoll).sort();
 
-        const laterals = absentees.filter(roll => {
+        const laterals = targetRolls.filter(roll => {
             const s = students.find(st => st.rollNumber === roll);
             return s && s.type === 'LATERAL';
-        }).map(getShortRoll);
+        }).map(getShortRoll).sort();
 
         const subjectName = subjects.find(s => s.id === subjectId)?.name || 'Unknown Subject';
 
-        // Date Format: DD-MM-YYYY
+        // Date Format: DD/MM/YYYY
         const [y, m, d] = date.split('-');
-        const formattedDate = `${d}-${m}-${y}`;
+        const formattedDate = `${d}/${m}/${y}`;
 
-        let summary = `Date: ${formattedDate}\nPeriod: ${period}\nSubject: ${subjectName}\n\n`;
+        const label = isPresenteesMode ? 'Presentees' : 'Absentees';
 
-        summary += `Absentees : ${regulars.length > 0 ? regulars.join(', ') : 'No Absentees'}.\n\n`;
+        let summary = `Date: ${formattedDate}\nSubject: ${subjectName}\nPeriod: ${period}\n\n`;
 
-        if (laterals.length > 0) {
-            summary += `LE : ${laterals.join(', ')}.`;
-        } else {
-            summary += `LE : No Absentees.`;
-        }
+        summary += `${label}: ${regulars.length > 0 ? regulars.join(', ') : 'Nil'}\n`;
+        summary += `LE : ${laterals.length > 0 ? laterals.join(', ') : 'Nil'}`;
 
         return summary;
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!subjectId) return showToast('Select a subject!', 'error');
 
         const absentees = getAbsentees();
-        const perms = students
-            .filter(s => getStudentStatus(s.rollNumber) === 'PERMISSION')
-            .map(s => s.rollNumber);
 
-        markAttendance({
-            id: crypto.randomUUID(),
-            date,
-            subjectId,
-            period, // Add period to payload
-            session: parseInt(period) <= 4 ? 'MORNING' : 'AFTERNOON',
-            absentees,
-            permissions: perms
-        });
+        try {
+            if (editRecord) {
+                const recordId = editRecord.id || editRecord._id;
+                console.log('DEBUG: Editing record ID:', recordId);
+                await updateAttendance(recordId, absentees);
+                showToast('Attendance updated successfully', 'success');
+            } else {
+                const perms = students
+                    .filter(s => getStudentStatus(s.rollNumber) === 'PERMISSION')
+                    .map(s => s.rollNumber);
 
-        navigate('/history');
+                await markAttendance({
+                    id: crypto.randomUUID(),
+                    date,
+                    subjectId,
+                    period,
+                    session: parseInt(period) <= 4 ? 'MORNING' : 'AFTERNOON',
+                    absentees,
+                    permissions: perms
+                });
+                showToast('Attendance marked successfully', 'success');
+            }
+            navigate('/history');
+        } catch (err: any) {
+            showToast(err.message || 'Failed to save attendance', 'error');
+        }
     };
 
     const copyToClipboard = () => {
@@ -184,17 +220,25 @@ export const MarkAttendance: React.FC = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 dark:bg-black">
+            {/* Edit Banner */}
+            {editRecord && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-2 text-center text-[10px] uppercase tracking-widest font-bold text-amber-700 dark:text-amber-400 border-b border-amber-100 dark:border-amber-800/50 shrink-0">
+                    Editing Record: {editRecord.date} • Period {editRecord.period}
+                </div>
+            )}
             {/* Header / Controls - Fixed at Top */}
             <div className="p-4 bg-white dark:bg-gray-900 shadow-sm z-10 space-y-3 shrink-0">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">Mark Attendance</h1>
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                        {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
+                    </h1>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className={`grid grid-cols-2 gap-3 ${editRecord ? 'opacity-60 pointer-events-none' : ''}`}>
                     <Input
                         type="date"
                         value={date}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={editRecord ? undefined : new Date().toISOString().split('T')[0]}
                         onChange={e => setDate(e.target.value)}
                         className="bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-700"
                     />
@@ -213,7 +257,7 @@ export const MarkAttendance: React.FC = () => {
                 </div>
 
                 <select
-                    className="w-full px-3 py-2 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 font-medium text-indigo-900 dark:text-indigo-300"
+                    className={`w-full px-3 py-2 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 font-medium text-indigo-900 dark:text-indigo-300 ${editRecord ? 'opacity-60 pointer-events-none' : ''}`}
                     value={subjectId}
                     onChange={e => setSubjectId(e.target.value)}
                 >
@@ -361,16 +405,30 @@ export const MarkAttendance: React.FC = () => {
 
                         <div className="p-6 space-y-4 overflow-y-auto">
                             {/* Toggle Display Count */}
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-900 dark:text-white">Display Count</span>
-                                <button
-                                    onClick={() => setShowCount(!showCount)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showCount ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
-                                >
-                                    <span
-                                        className={`${showCount ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
-                                    />
-                                </button>
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-medium text-gray-900 dark:text-white">Display Count</span>
+                                    <button
+                                        onClick={() => setShowCount(!showCount)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showCount ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                    >
+                                        <span
+                                            className={`${showCount ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
+                                        />
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <span className="font-medium text-gray-900 dark:text-white">Display Presentees</span>
+                                    <button
+                                        onClick={() => setShowPresentees(!showPresentees)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showPresentees ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                    >
+                                        <span
+                                            className={`${showPresentees ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
+                                        />
+                                    </button>
+                                </div>
                             </div>
 
                             {showCount && (

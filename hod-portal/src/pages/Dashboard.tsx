@@ -45,6 +45,7 @@ export const Dashboard = () => {
     const [error, setError] = useState('');
     const [showDetailed, setShowDetailed] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedPeriod, setSelectedPeriod] = useState<string>('ALL');
 
     const handleExportExcel = () => {
         if (!stats?.classSummary) return;
@@ -233,7 +234,7 @@ export const Dashboard = () => {
             let data;
 
             if (selectedDate === today) {
-                data = await api.hod.getStats();
+                data = await api.hod.getStats(selectedPeriod);
             } else {
                 data = await api.hod.getAnalyticsHistory(selectedDate);
             }
@@ -276,7 +277,7 @@ export const Dashboard = () => {
 
     useEffect(() => {
         fetchStats(true);
-    }, [selectedDate]);
+    }, [selectedDate, selectedPeriod]);
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading the data to display on dashboard...</div>;
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
@@ -327,7 +328,7 @@ export const Dashboard = () => {
                         {viewMode === 'DAILY' ? 'Overview & Analytics' : 'Department Statistics'}
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        {viewMode === 'DAILY' ? "Today's overall department status" : "Strategic academic analytics"}
+                        {viewMode === 'DAILY' ? "Today's overall department status & Analytics will be saved to the database at 5:00 PM daily" : "Strategic academic analytics"}
                     </p>
                     {viewMode === 'DAILY' && (
                         <div className="text-gray-500 dark:text-gray-400 mt-1 text-sm font-medium flex items-center gap-2">
@@ -339,6 +340,21 @@ export const Dashboard = () => {
                                 onChange={(e) => setSelectedDate(e.target.value)}
                                 className="bg-transparent border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:text-white"
                             />
+                        </div>
+                    )}
+                    {viewMode === 'DAILY' && selectedDate === new Date().toISOString().split('T')[0] && (
+                        <div className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium flex items-center gap-2">
+                            <span>Period :</span>
+                            <select
+                                value={selectedPeriod}
+                                onChange={(e) => setSelectedPeriod(e.target.value)}
+                                className="bg-transparent border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:text-white"
+                            >
+                                <option value="ALL">Full Day</option>
+                                {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
+                                    <option key={p} value={p.toString()}>Period {p}</option>
+                                ))}
+                            </select>
                         </div>
                     )}
                 </div>
@@ -549,7 +565,7 @@ export const Dashboard = () => {
                                                                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                                                                 : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                                                                 }`}>
-                                                                {cls.status}
+                                                                {cls.status}{selectedPeriod === 'ALL' && cls.markedPeriod ? ` (P${cls.markedPeriod})` : ''}
                                                             </span>
                                                         </td>
                                                     </tr>
@@ -706,8 +722,9 @@ export const Dashboard = () => {
                             )}
                         </Card>
                     </div>
-                )}
-            </div>
-        </div>
+                )
+                }
+            </div >
+        </div >
     );
 };

@@ -8,6 +8,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/stats/history', authMiddleware, hodController.getAnalyticsHistory);
 router.get('/stats', authMiddleware, hodController.getStats);
+router.get('/comparison', authMiddleware, hodController.getComparison);
+router.get('/register', authMiddleware, hodController.getRegister);
 router.get('/classes', authMiddleware, hodController.getClasses);
 router.post('/classes', authMiddleware, hodController.createClass);
 router.delete('/classes/:classId', authMiddleware, hodController.deleteClass);

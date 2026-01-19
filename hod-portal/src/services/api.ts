@@ -94,8 +94,16 @@ export const api = {
     },
     hod: {
         // Specific HoD actions
-        getStats: async () => {
-            return request('/hod/stats');
+        getStats: async (period?: string) => {
+            return request(`/hod/stats${period ? `?period=${period}` : ''}`);
+        },
+        getComparison: async (params: { date: string, classId: string, periodA: string, periodB: string }) => {
+            const query = new URLSearchParams(params).toString();
+            return request(`/hod/comparison?${query}`);
+        },
+        getRegister: async (params: { date: string, classId: string }) => {
+            const query = new URLSearchParams(params).toString();
+            return request(`/hod/register?${query}`);
         },
         getAnalyticsHistory: async (date: string) => {
             return request(`/hod/stats/history?date=${date}`);

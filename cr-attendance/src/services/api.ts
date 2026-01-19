@@ -133,6 +133,26 @@ export const api = {
             if (!res.ok) throw await res.json();
             return res.json();
         },
+        update: async (id: string, data: any) => {
+            if (!id || id === 'undefined') {
+                console.error('❌ API Error: Attempted to update record with missing/invalid ID:', id);
+                throw new Error('Attendance Record ID is missing. Cannot update.');
+            }
+            const url = `${API_URL}/attendance/${id}`;
+            console.log(`📡 API Request: PUT ${url}`, data);
+
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                console.error('❌ API Error Response:', errorData);
+                throw errorData;
+            }
+            return res.json();
+        },
         history: async (date?: string) => {
             const url = date ? `${API_URL}/history?date=${date}` : `${API_URL}/history`;
             const res = await fetch(url, { headers: getHeaders() });

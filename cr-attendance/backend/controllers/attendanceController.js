@@ -71,3 +71,23 @@ exports.getHistory = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.updateAttendance = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { absentees } = req.body;
+        const classId = req.user.classId;
+
+        const record = await Attendance.findOne({ _id: id, classId });
+        if (!record) {
+            return res.status(404).json({ message: 'Attendance record not found' });
+        }
+
+        record.absentees = absentees;
+        await record.save();
+
+        res.json({ message: 'Attendance updated successfully', record });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

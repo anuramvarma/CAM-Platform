@@ -11,7 +11,9 @@ import {
     X,
     Shield,
     Moon,
-    Sun
+    Sun,
+    ArrowRightLeft,
+    FileText
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -47,6 +49,8 @@ export const Sidebar = () => {
 
     const links = [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+        { to: '/comparison', label: 'Comparison', icon: ArrowRightLeft },
+        { to: '/register', label: 'Register', icon: FileText },
         { to: '/permissions', label: 'Permissions', icon: FileSignature },
         { to: '/classes', label: 'Classes', icon: School },
         { to: '/students', label: 'Students Info', icon: Users },
