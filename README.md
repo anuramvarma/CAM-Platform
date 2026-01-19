@@ -66,7 +66,7 @@ CAM-Platform/
 ---
 
 ## 🤝 Project Maintainer
-**Anurag** - *Lead Developer & Architect*
+**Anuram Varma** - *Lead Developer & Architect*
 
 ---
 <p align="center">Empowering Education through Digital Innovation</p>
