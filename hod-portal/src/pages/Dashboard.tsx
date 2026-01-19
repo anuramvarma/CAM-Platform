@@ -475,7 +475,7 @@ export const Dashboard = () => {
                                         disabled={!stats}
                                     >
                                         <FileSpreadsheet size={16} className="mr-2" />
-                                        View in Excel
+                                        Excel
                                     </Button>}
                                     <Button
                                         variant="secondary"
@@ -485,7 +485,7 @@ export const Dashboard = () => {
                                         disabled={!stats}
                                     >
                                         <Download size={16} className="mr-2" />
-                                        Get as PDF
+                                        PDF
                                     </Button>
                                     <Button
                                         variant="secondary"
