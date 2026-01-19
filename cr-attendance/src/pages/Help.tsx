@@ -1,18 +1,14 @@
 import React from 'react';
 import { Card } from '../components/ui/Card';
 import {
-    CheckCircle2,
     Calendar,
     Users,
     BookOpen,
-    Clock,
     ShieldCheck,
-    Smartphone,
     HelpCircle,
     ArrowRight,
     LayoutDashboard,
     History as HistoryIcon,
-    Settings,
     MoreHorizontal
 } from 'lucide-react';
 

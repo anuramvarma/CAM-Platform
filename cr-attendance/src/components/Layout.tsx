@@ -18,16 +18,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const navItems = [
         { label: 'Home', path: '/', icon: Home },
         { label: 'Our Subjects', path: '/subjects', icon: BookOpen },
-<<<<<<< HEAD
         { label: 'Students Info', path: '/students', icon: Users },
         { label: 'Permissions', path: '/permissions', icon: Calendar },
         { label: 'History', path: '/history', icon: Clock },
         { label: 'Help', path: '/help', icon: HelpCircle },
-=======
-        { label: 'Students Info ', path: '/students', icon: Users },
-        { label: 'Permissions', path: '/permissions', icon: Calendar },
-        { label: 'History ', path: '/history', icon: Clock },
->>>>>>> 232cde9a4f21dac0d85975952f9dbfb6934f8a70
         { label: 'Misc', path: '/misc', icon: MoreHorizontal },
     ];
 
