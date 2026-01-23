@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Lock, Share2, Search, Copy, X, RotateCcw } from 'lucide-react';
+import { Lock, Share2, Search, Copy, X, RotateCcw, ShieldCheck } from 'lucide-react';
 
 export const MarkAttendance: React.FC = () => {
     const { subjects, students, permissions, markAttendance, updateAttendance } = useApp();
@@ -320,7 +320,10 @@ export const MarkAttendance: React.FC = () => {
                                 parseInt(period)
                             );
 
-                            if (activePerm) permReason = activePerm.reason;
+                            if (activePerm) {
+                                permReason = activePerm.reason;
+                                (student as any).activePermSource = activePerm.approvedBy || 'By CR';
+                            }
                         }
 
                         // Active check based on mode
@@ -363,9 +366,16 @@ export const MarkAttendance: React.FC = () => {
                                     <div className="text-left">
                                         <div className="font-bold text-gray-800 dark:text-gray-200 text-lg">{student.rollNumber}</div>
                                         {isPerm && permReason ? (
-                                            <div className="text-xs font-medium text-amber-700 dark:text-amber-300 mt-0.5 flex items-center gap-1">
-                                                <span>Reason:</span>
-                                                <span className="italic">"{permReason}"</span>
+                                            <div className="text-xs font-medium mt-0.5 flex flex-wrap items-center gap-1.5">
+                                                {(student as any).activePermSource === 'HOD' ? (
+                                                    <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-900/40 px-1 rounded">
+                                                        <ShieldCheck size={10} className="fill-emerald-100" /> Approved by HOD
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-blue-700 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-900/40 px-1 rounded">CR approved</span>
+                                                )}
+                                                <span className="text-gray-400">|</span>
+                                                <span className="text-amber-700 dark:text-amber-300 italic leading-tight">"{permReason}"</span>
                                             </div>
                                         ) : (
                                             <div className="text-xs text-gray-500 dark:text-gray-400">{student.type}</div>

@@ -178,10 +178,27 @@ export const api = {
             if (!res.ok) throw await res.json();
             return mapId(await res.json());
         },
-        deletePermission: async (id: string) => {
+        async deletePermission(id: string) {
             const res = await fetch(`${API_URL}/hod/permissions/${id}`, {
                 method: 'DELETE',
                 headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return res.json();
+        },
+        async approvePermission(id: string) {
+            const res = await fetch(`${API_URL}/hod/permissions/${id}/approve`, {
+                method: 'PUT',
+                headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return res.json();
+        },
+        async bulkApprovePermissions(ids: string[]) {
+            const res = await fetch(`${API_URL}/hod/permissions/bulk-approve`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ ids })
             });
             if (!res.ok) throw await res.json();
             return res.json();

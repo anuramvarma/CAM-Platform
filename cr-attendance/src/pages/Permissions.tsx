@@ -16,6 +16,7 @@ interface PermissionGroup {
     customPeriods: number[];
     permissions: Permission[]; // All raw permissions in this group
     studentCount: number;
+    approvedBy?: string;
 }
 
 
@@ -106,7 +107,7 @@ export const Permissions: React.FC = () => {
             }
 
             // Create a unique key for the "Event"
-            const key = `${perm.startDate}|${perm.endDate}|${perm.type}|${perm.reason}|${(perm.customPeriods || []).sort().join(',')}`;
+            const key = `${perm.startDate}|${perm.endDate}|${perm.type}|${perm.reason}|${(perm.customPeriods || []).sort().join(',')}|${perm.approvedBy || 'CR'}`;
 
             if (!groups[key]) {
                 groups[key] = {
@@ -117,7 +118,8 @@ export const Permissions: React.FC = () => {
                     type: perm.type,
                     customPeriods: perm.customPeriods || [],
                     permissions: [],
-                    studentCount: 0
+                    studentCount: 0,
+                    approvedBy: perm.approvedBy || 'CR'
                 };
             }
             groups[key].permissions.push(perm);
@@ -521,15 +523,13 @@ export const Permissions: React.FC = () => {
                                         typeLabel = `P: ${group.customPeriods.join(',')}`;
                                     }
 
-                                    const isHodApproved = group.permissions.some(p => p.approvedBy === 'HOD');
-
                                     return (
                                         <div
                                             key={group.key}
                                             onClick={() => setViewingGroup(group)}
-                                            className={`bg-white dark:bg-gray-900 p-4 rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden ${isHodApproved ? 'border-indigo-200 dark:border-indigo-800' : 'border-gray-200 dark:border-gray-800'}`}
+                                            className={`bg-white dark:bg-gray-900 p-4 rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden ${group.approvedBy === 'HOD' ? 'border-emerald-200 dark:border-emerald-800' : 'border-blue-200 dark:border-blue-800'}`}
                                         >
-                                            <div className={`w-full absolute top-0 left-0 h-1 ${isHodApproved ? 'bg-gradient-to-r from-indigo-500 to-purple-500' : 'bg-gray-100 dark:bg-gray-800'}`} />
+                                            <div className={`w-full absolute top-0 left-0 h-1 ${group.approvedBy === 'HOD' ? 'bg-emerald-500' : 'bg-blue-400'}`} />
 
                                             <div className="flex justify-between items-start mb-2 mt-2">
                                                 <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 line-clamp-1" title={group.reason}>{group.reason}</h3>
@@ -537,9 +537,13 @@ export const Permissions: React.FC = () => {
                                                     <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide shrink-0 ${group.type === 'CUSTOM' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'}`}>
                                                         {typeLabel}
                                                     </span>
-                                                    {isHodApproved && (
-                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-800">
-                                                            <ShieldCheck size={10} /> HOD
+                                                    {group.approvedBy === 'HOD' ? (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                                                            <ShieldCheck size={10} className="fill-emerald-100 dark:fill-emerald-900/40" /> Approved by HoD
+                                                        </span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800">
+                                                            Approved by CR
                                                         </span>
                                                     )}
                                                 </div>
@@ -573,9 +577,9 @@ export const Permissions: React.FC = () => {
                         {/* Header */}
                         <div className="p-4 border-b border-gray-100 dark:border-gray-800 shrink-0 relative">
                             <h3 className="font-bold text-center text-lg text-gray-900 dark:text-white">Permission Details</h3>
-                            {viewingGroup.permissions.some(p => p.approvedBy === 'HOD') && (
-                                <div className="absolute top-4 right-4 text-indigo-600 dark:text-indigo-400" title="Approved by HOD">
-                                    <ShieldCheck size={20} />
+                            {viewingGroup.approvedBy === 'HOD' && (
+                                <div className="absolute top-4 right-4 text-emerald-600 dark:text-emerald-400" title="Approved by HOD">
+                                    <ShieldCheck size={22} className="fill-emerald-50 dark:fill-emerald-900/40" />
                                 </div>
                             )}
                         </div>
@@ -617,9 +621,9 @@ export const Permissions: React.FC = () => {
                                 </div>
                                 <div className="flex flex-wrap justify-center gap-1.5 max-h-40 overflow-y-auto">
                                     {viewingGroup.permissions.map(p => (
-                                        <span key={p.id} className={`text-xs border px-2 py-1 rounded ${p.approvedBy === 'HOD' ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}>
+                                        <span key={p.id} className={`text-xs border px-2 py-1 rounded ${p.approvedBy === 'HOD' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'}`}>
                                             {p.studentRoll}
-                                            {p.approvedBy === 'HOD' && '*'}
+                                            {p.approvedBy === 'HOD' && '✓'}
                                         </span>
                                     ))}
                                 </div>

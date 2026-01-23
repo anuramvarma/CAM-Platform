@@ -632,6 +632,33 @@ exports.deletePermission = async (req, res) => {
     }
 };
 
+exports.approvePermission = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Permission.findByIdAndUpdate(id, { approvedBy: 'HOD' });
+        res.json({ message: 'Permission approved by HoD' });
+    } catch (err) {
+        console.error('HoD Approve Permission Error:', err);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+exports.bulkApprovePermissions = async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids)) return res.status(400).json({ error: 'IDs must be an array' });
+
+        await Permission.updateMany(
+            { _id: { $in: ids } },
+            { approvedBy: 'HOD' }
+        );
+        res.json({ message: `${ids.length} permissions approved by HoD` });
+    } catch (err) {
+        console.error('HoD Bulk Approve Permission Error:', err);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
 exports.getCRs = async (req, res) => {
     try {
         const user = await User.findById(req.user.userId);

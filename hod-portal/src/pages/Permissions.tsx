@@ -207,6 +207,43 @@ export const Permissions = () => {
         }
     };
 
+    const handleBulkApprove = async () => {
+        const toApprove = permissions.filter(p => selectedPermissionIds.includes(p.id) && p.approvedBy !== 'HOD');
+        if (toApprove.length === 0) {
+            alert('No permissions eligible for HoD approval selected');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to approve ${toApprove.length} permissions?`)) return;
+
+        try {
+            const ids = toApprove.map(p => p.id);
+            await api.hod.bulkApprovePermissions(ids);
+
+            // Update local state
+            setPermissions(prev => prev.map(p =>
+                ids.includes(p.id) ? { ...p, approvedBy: 'HOD' } : p
+            ));
+            setSelectedPermissionIds([]);
+            alert(`${ids.length} permissions approved successfully`);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to approve some permissions');
+        }
+    };
+
+    const handleApprovePermission = async (id: string) => {
+        try {
+            await api.hod.approvePermission(id);
+            setPermissions(prev => prev.map(p =>
+                p.id === id ? { ...p, approvedBy: 'HOD' } : p
+            ));
+        } catch (err) {
+            console.error(err);
+            alert('Failed to approve permission');
+        }
+    };
+
     if (!Array.isArray(classes)) {
         return <div>Crash before render</div>;
     }
@@ -428,14 +465,29 @@ export const Permissions = () => {
                                     </div>
                                     <div className="flex flex-col gap-2 justify-end pb-0.5">
                                         {selectedPermissionIds.length > 0 && (
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                className="w-full bg-red-600 hover:bg-red-700 text-white"
-                                                onClick={handleBulkDelete}
-                                            >
-                                                Delete ({selectedPermissionIds.length})
-                                            </Button>
+                                            <div className="flex gap-2 w-full">
+                                                {permissions.some(p => selectedPermissionIds.includes(p.id) && p.approvedBy !== 'HOD') && (
+                                                    <Button
+                                                        variant="primary"
+                                                        size="sm"
+                                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                        onClick={handleBulkApprove}
+                                                    >
+                                                        Approve All ({selectedPermissionIds.filter(id => {
+                                                            const p = permissions.find(p => p.id === id);
+                                                            return p && p.approvedBy !== 'HOD';
+                                                        }).length})
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white border-none"
+                                                    onClick={handleBulkDelete}
+                                                >
+                                                    Delete ({selectedPermissionIds.length})
+                                                </Button>
+                                            </div>
                                         )}
                                         <Button
                                             variant="secondary"
@@ -518,13 +570,24 @@ export const Permissions = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={() => handleDelete(perm.id)}
-                                                        className="text-gray-400 hover:text-red-600 transition-colors"
-                                                        title="Revoke Permission"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    <div className="flex justify-end gap-2">
+                                                        {perm.approvedBy !== 'HOD' && (
+                                                            <button
+                                                                onClick={() => handleApprovePermission(perm.id)}
+                                                                className="text-emerald-500 hover:text-emerald-600 transition-colors"
+                                                                title="Approve as HoD"
+                                                            >
+                                                                <CheckCircle className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleDelete(perm.id)}
+                                                            className="text-gray-400 hover:text-red-600 transition-colors"
+                                                            title="Revoke Permission"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

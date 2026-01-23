@@ -21,6 +21,8 @@ router.delete('/students/:id', authMiddleware, hodController.deleteStudent);
 router.get('/permissions/:classId', authMiddleware, hodController.getPermissionsByClass);
 router.post('/permissions', authMiddleware, hodController.addPermission);
 router.delete('/permissions/:id', authMiddleware, hodController.deletePermission);
+router.put('/permissions/:id/approve', authMiddleware, hodController.approvePermission);
+router.post('/permissions/bulk-approve', authMiddleware, hodController.bulkApprovePermissions);
 
 router.get('/crs', authMiddleware, hodController.getCRs);
 router.post('/crs/approve', authMiddleware, hodController.approveCR);
