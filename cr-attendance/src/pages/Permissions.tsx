@@ -57,9 +57,11 @@ export const Permissions: React.FC = () => {
     // Edit State: If non-null, we are editing this existing group of permissions
     const [editingOriginals, setEditingOriginals] = useState<Permission[] | null>(null);
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
     // Form State
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const [startDate, setStartDate] = useState(todayStr);
+    const [endDate, setEndDate] = useState(todayStr);
     const [reason, setReason] = useState('');
     const [type, setType] = useState<'FULL_DAY' | 'MORNING' | 'AFTERNOON' | 'CUSTOM'>('FULL_DAY');
     const [customPeriods, setCustomPeriods] = useState<number[]>([]);
@@ -75,7 +77,7 @@ export const Permissions: React.FC = () => {
     );
 
     // Date Filter State
-    const [filterDate, setFilterDate] = useState('');
+    const [filterDate, setFilterDate] = useState(todayStr);
 
     // Save Button Timer State
     const [saveCountdown, setSaveCountdown] = useState(0);
@@ -174,8 +176,8 @@ export const Permissions: React.FC = () => {
     };
 
     const resetForm = () => {
-        setStartDate('');
-        setEndDate('');
+        setStartDate(todayStr);
+        setEndDate(todayStr);
         setReason('');
         setType('FULL_DAY');
         setCustomPeriods([]);
@@ -278,6 +280,44 @@ export const Permissions: React.FC = () => {
         setViewingGroup(null);
     };
 
+    const handleCopyAll = () => {
+        if (groupedPermissions.length === 0) {
+            showToast('No permissions to copy', 'info');
+            return;
+        }
+
+        const todayDate = new Date().toISOString().split('T')[0];
+        const displayDate = (filterDate || todayDate).split('-').reverse().join('-');
+
+        let text = `Dear Faculty,\n\nToday's Permissions : ${displayDate}\n\n`;
+
+        groupedPermissions.forEach((group) => {
+            const regRolls: string[] = [];
+            const leRolls: string[] = [];
+
+            // Sort permissions by roll number
+            const sortedPerms = [...group.permissions].sort((a, b) => a.studentRoll.localeCompare(b.studentRoll));
+
+            sortedPerms.forEach(p => {
+                const s = students.find(st => st.rollNumber === p.studentRoll);
+                const shortRoll = p.studentRoll.slice(-2);
+                if (s && s.type === 'LATERAL') leRolls.push(shortRoll);
+                else regRolls.push(shortRoll);
+            });
+
+            const typeLabel = group.type === 'CUSTOM'
+                ? `Custom Periods: ${group.customPeriods.join(',')}`
+                : group.type.replace('_', ' ').split(' ').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ');
+
+            text += `Reason: ${group.reason} (${typeLabel})\n\n`;
+            text += `Students :  ${regRolls.length ? regRolls.join(', ') : 'None'}.\n`;
+            text += `LE: ${leRolls.length ? leRolls.join(', ') : 'None'}\n\n`;
+        });
+
+        navigator.clipboard.writeText(text.trim());
+        showToast('Copied all visible permissions to clipboard', 'success');
+    };
+
     return (
         <div className="space-y-6 pb-20 relative">
             <div className="flex justify-between items-center">
@@ -319,12 +359,14 @@ export const Permissions: React.FC = () => {
                                 type="date"
                                 label="Starting from"
                                 value={startDate}
+                                min={todayStr}
                                 onChange={e => setStartDate(e.target.value)}
                             />
                             <Input
                                 type="date"
                                 label="Ends on"
                                 value={endDate}
+                                min={todayStr}
                                 onChange={e => setEndDate(e.target.value)}
                             />
                         </div>
@@ -498,21 +540,30 @@ export const Permissions: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
-                                <div className="flex-1">
+                            <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm flex items-end gap-3 flex-wrap">
+                                <div className="flex-1 min-w-[200px]">
                                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Filter by Date</label>
                                     <input
                                         type="date"
-                                        className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 h-[42px]"
                                         value={filterDate}
                                         onChange={(e) => setFilterDate(e.target.value)}
                                     />
                                 </div>
-                                {filterDate && (
-                                    <Button variant="ghost" size="sm" onClick={() => setFilterDate('')} className="text-red-500 h-[42px] mt-5">
-                                        Clear
+                                <div className="flex gap-2">
+                                    {filterDate && (
+                                        <Button variant="ghost" size="sm" onClick={() => setFilterDate('')} className="text-red-500 h-[42px]">
+                                            Clear
+                                        </Button>
+                                    )}
+                                    <Button
+                                        onClick={handleCopyAll}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white h-[42px] px-4 shadow-sm flex items-center gap-2 whitespace-nowrap"
+                                    >
+                                        <Copy size={18} />
+                                        Copy all
                                     </Button>
-                                )}
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
