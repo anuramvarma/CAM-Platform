@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Lock, Share2, Search, Copy, X, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Lock, Share2, Search, Copy, X, RotateCcw, ShieldCheck, CheckCircle2, XCircle, CalendarDays, BookOpen, Clock } from 'lucide-react';
 
 export const MarkAttendance: React.FC = () => {
     const { subjects, students, permissions, markAttendance, updateAttendance } = useApp();
@@ -16,33 +16,22 @@ export const MarkAttendance: React.FC = () => {
 
     console.log('DEBUG: MarkAttendance - editRecord from state:', editRecord);
 
-    // Popup State
     const [showPreview, setShowPreview] = useState(false);
     const [showCount, setShowCount] = useState(false);
     const [showPresentees, setShowPresentees] = useState(false);
-    // Form State
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [subjectId, setSubjectId] = useState('');
     const [period, setPeriod] = useState('1');
     const [markingMode, setMarkingMode] = useState<'MARK_ABSENTEES' | 'MARK_PRESENTEES'>('MARK_ABSENTEES');
     const [searchTerm, setSearchTerm] = useState('');
-
-    // State: Selection-based logic
-    // We store who is "Selected". 
-    // If Mode == ABSENTIES, Selected = ABSENT.
-    // If Mode == PRESENTEES, Selected = PRESENT.
     const [selectedRolls, setSelectedRolls] = useState<Set<string>>(new Set());
 
-    // Effect to pre-fill data if editing
     React.useEffect(() => {
         if (editRecord) {
             console.log('DEBUG: Initializing Edit Mode with:', editRecord);
             if (editRecord.date) setDate(editRecord.date);
-
-            // Critical: extract subjectId properly
             const subId = editRecord.subjectId?._id || editRecord.subjectId;
             if (subId) setSubjectId(subId);
-
             if (editRecord.period) setPeriod(editRecord.period.toString());
             if (Array.isArray(editRecord.absentees)) {
                 setSelectedRolls(new Set(editRecord.absentees));
@@ -51,64 +40,37 @@ export const MarkAttendance: React.FC = () => {
         }
     }, [editRecord]);
 
-    // Compute status on the fly
-    const getStudentStatus = (roll: string): 'PRESENT' | 'ABSENT' | 'PERMISSION' => {
-        const activePerm = getActivePermission(
-            permissions,
-            roll,
-            date,
-            parseInt(period)
-        );
-
-        if (activePerm) return 'PERMISSION';
-
-        const isSelected = selectedRolls.has(roll);
-
-        if (markingMode === 'MARK_ABSENTEES') {
-            return isSelected ? 'ABSENT' : 'PRESENT';
-        } else {
-            return isSelected ? 'PRESENT' : 'ABSENT';
-        }
-    };
-
-    const getActivePermission = (
-        permissions: any[],
-        studentRoll: string,
-        date: string,
-        period: number
-    ) => {
+    const getActivePermission = (permissions: any[], studentRoll: string, date: string, period: number) => {
         return permissions.find(p => {
             const pStart = new Date(p.startDate);
             const pEnd = new Date(p.endDate);
             const curr = new Date(date);
-
             const isDateMatch = curr >= pStart && curr <= pEnd;
             const isRollMatch = p.studentRoll === studentRoll;
-
             const isMorning = period <= 4;
             let isSessionMatch = true;
-
             if (p.type === 'MORNING' && !isMorning) isSessionMatch = false;
             if (p.type === 'AFTERNOON' && isMorning) isSessionMatch = false;
-            if (p.type === 'CUSTOM' && !p.customPeriods?.includes(period)) {
-                isSessionMatch = false;
-            }
-
+            if (p.type === 'CUSTOM' && !p.customPeriods?.includes(period)) isSessionMatch = false;
             return isDateMatch && isRollMatch && isSessionMatch;
         });
+    };
+
+    const getStudentStatus = (roll: string): 'PRESENT' | 'ABSENT' | 'PERMISSION' => {
+        const activePerm = getActivePermission(permissions, roll, date, parseInt(period));
+        if (activePerm) return 'PERMISSION';
+        const isSelected = selectedRolls.has(roll);
+        if (markingMode === 'MARK_ABSENTEES') return isSelected ? 'ABSENT' : 'PRESENT';
+        else return isSelected ? 'PRESENT' : 'ABSENT';
     };
 
     const toggleStatus = (roll: string) => {
         const currentStatus = getStudentStatus(roll);
         if (currentStatus === 'PERMISSION') return;
-
         setSelectedRolls(prev => {
             const next = new Set(prev);
-            if (next.has(roll)) {
-                next.delete(roll);
-            } else {
-                next.add(roll);
-            }
+            if (next.has(roll)) next.delete(roll);
+            else next.add(roll);
             return next;
         });
     };
@@ -119,57 +81,37 @@ export const MarkAttendance: React.FC = () => {
         }
     };
 
-    const getAbsentees = () => {
-        return students
-            .filter(s => getStudentStatus(s.rollNumber) === 'ABSENT')
-            .map(s => s.rollNumber)
-            .sort();
-    };
-
+    const getAbsentees = () => students.filter(s => getStudentStatus(s.rollNumber) === 'ABSENT').map(s => s.rollNumber).sort();
     const getShortRoll = (roll: string) => roll.slice(-2);
 
     const filteredStudents = useMemo(() => {
         return students.filter(s => s.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [students, searchTerm]);
 
+    const absentCount = getAbsentees().length;
+    const presentCount = students.length - absentCount;
+    const permCount = students.filter(s => getStudentStatus(s.rollNumber) === 'PERMISSION').length;
+
     const generateSummary = () => {
         const isPresenteesMode = showPresentees;
-
         const targetRolls = isPresenteesMode
             ? students.filter(s => getStudentStatus(s.rollNumber) === 'PRESENT').map(s => s.rollNumber).sort()
             : getAbsentees();
-
-        const regulars = targetRolls.filter(roll => {
-            const s = students.find(st => st.rollNumber === roll);
-            return s && s.type !== 'LATERAL';
-        }).map(getShortRoll).sort();
-
-        const laterals = targetRolls.filter(roll => {
-            const s = students.find(st => st.rollNumber === roll);
-            return s && s.type === 'LATERAL';
-        }).map(getShortRoll).sort();
-
+        const regulars = targetRolls.filter(roll => { const s = students.find(st => st.rollNumber === roll); return s && s.type !== 'LATERAL'; }).map(getShortRoll).sort();
+        const laterals = targetRolls.filter(roll => { const s = students.find(st => st.rollNumber === roll); return s && s.type === 'LATERAL'; }).map(getShortRoll).sort();
         const subjectName = subjects.find(s => s.id === subjectId)?.name || 'Unknown Subject';
-
-        // Date Format: DD/MM/YYYY
         const [y, m, d] = date.split('-');
         const formattedDate = `${d}/${m}/${y}`;
-
         const label = isPresenteesMode ? 'Presentees' : 'Absentees';
-
         let summary = `Date: ${formattedDate}\nSubject: ${subjectName}\nPeriod: ${period}\n\n`;
-
         summary += `${label}: ${regulars.length > 0 ? regulars.join(', ') : 'Nil'}\n`;
         summary += `LE : ${laterals.length > 0 ? laterals.join(', ') : 'Nil'}`;
-
         return summary;
     };
 
     const handleSave = async () => {
         if (!subjectId) return showToast('Select a subject!', 'error');
-
         const absentees = getAbsentees();
-
         try {
             if (editRecord) {
                 const recordId = editRecord.id || editRecord._id;
@@ -177,10 +119,7 @@ export const MarkAttendance: React.FC = () => {
                 await updateAttendance(recordId, absentees);
                 showToast('Attendance updated successfully', 'success');
             } else {
-                const perms = students
-                    .filter(s => getStudentStatus(s.rollNumber) === 'PERMISSION')
-                    .map(s => s.rollNumber);
-
+                const perms = students.filter(s => getStudentStatus(s.rollNumber) === 'PERMISSION').map(s => s.rollNumber);
                 await markAttendance({
                     id: crypto.randomUUID(),
                     date,
@@ -198,109 +137,169 @@ export const MarkAttendance: React.FC = () => {
         }
     };
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(generateSummary());
-        showToast('Copied to clipboard!', 'success');
-    };
-
-    const shareWhatsApp = () => {
-        const text = generateSummary();
-        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(url, '_blank');
-    };
+    const copyToClipboard = () => { navigator.clipboard.writeText(generateSummary()); showToast('Copied to clipboard!', 'success'); };
+    const shareWhatsApp = () => { const text = generateSummary(); const url = `https://wa.me/?text=${encodeURIComponent(text)}`; window.open(url, '_blank'); };
 
     if (subjects.length === 0) {
         return (
-            <div className="text-center py-10">
-                <h2 className="text-xl font-bold">No Subjects Found</h2>
-                <Button onClick={() => navigate('/subjects')} className="mt-4">Add Subjects</Button>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-6">
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <BookOpen size={28} className="text-slate-400" />
+                </div>
+                <div className="text-center">
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">No Subjects Found</h2>
+                    <p className="text-sm text-slate-400 mt-1">Add subjects to start marking attendance</p>
+                </div>
+                <button
+                    onClick={() => navigate('/subjects')}
+                    className="mt-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors"
+                >
+                    Add Subjects
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] bg-gray-50 dark:bg-black">
+        <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#0a0a0f]">
+
             {/* Edit Banner */}
             {editRecord && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 p-2 text-center text-[10px] uppercase tracking-widest font-bold text-amber-700 dark:text-amber-400 border-b border-amber-100 dark:border-amber-800/50 shrink-0">
-                    Editing Record: {editRecord.date} • Period {editRecord.period}
+                <div className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 shrink-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-[11px] font-semibold tracking-widest uppercase text-amber-600 dark:text-amber-400">
+                        Editing · {editRecord.date} · Period {editRecord.period}
+                    </span>
                 </div>
             )}
-            {/* Header / Controls - Fixed at Top */}
-            <div className="p-4 bg-white dark:bg-gray-900 shadow-sm z-10 space-y-3 shrink-0">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+
+            {/* Header Controls */}
+            <div className="shrink-0 bg-white dark:bg-[#111118] border-b border-slate-100 dark:border-white/5 px-4 pt-4 pb-3 space-y-3">
+
+                {/* Title */}
+                <div className="flex items-center justify-between">
+                    <h1 className="text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">
                         {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
                     </h1>
+                    <button
+                        onClick={handleReset}
+                        title="Reset Selections"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all text-xs font-medium"
+                    >
+                        <RotateCcw size={13} />
+                        Reset
+                    </button>
                 </div>
 
-                <div className={`grid grid-cols-2 gap-3 ${editRecord ? 'opacity-60 pointer-events-none' : ''}`}>
-                    <Input
-                        type="date"
-                        value={date}
-                        min={editRecord ? undefined : new Date().toISOString().split('T')[0]}
-                        onChange={e => setDate(e.target.value)}
-                        className="bg-gray-50 dark:bg-gray-800 dark:text-white dark:border-gray-700"
-                    />
-                    <div className="relative">
+                {/* Date + Period + Subject */}
+                <div className={`grid grid-cols-3 gap-2 ${editRecord ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <label className="col-span-1 flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <CalendarDays size={10} /> Date
+                        </span>
+                        <input
+                            type="date"
+                            value={date}
+                            min={editRecord ? undefined : new Date().toISOString().split('T')[0]}
+                            onChange={e => setDate(e.target.value)}
+                            className="w-full text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                        />
+                    </label>
+
+                    <label className="col-span-1 flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <Clock size={10} /> Period
+                        </span>
                         <select
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg h-10 bg-gray-50 dark:bg-gray-800 dark:text-white appearance-none"
                             value={period}
                             onChange={e => setPeriod(e.target.value)}
+                            className="w-full text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none"
                         >
                             {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
-                                <option key={p} value={p}>Period {p}</option>
+                                <option key={p} value={p}>P{p}</option>
                             ))}
                         </select>
-                        {/* Custom arrow could go here */}
+                    </label>
+
+                    <label className="col-span-1 flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                            <BookOpen size={10} /> Subject
+                        </span>
+                        <select
+                            value={subjectId}
+                            onChange={e => setSubjectId(e.target.value)}
+                            className="w-full text-xs font-medium px-2.5 py-2 rounded-xl border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10 text-violet-800 dark:text-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none"
+                        >
+                            <option value="">Select</option>
+                            {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                    </label>
+                </div>
+
+                {/* Live Stats Bar */}
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col items-center py-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-none">{presentCount}</span>
+                        <span className="text-[10px] font-medium text-emerald-500/80 mt-0.5">Present</span>
+                    </div>
+                    <div className="flex flex-col items-center py-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20">
+                        <span className="text-lg font-bold text-red-500 dark:text-red-400 leading-none">{absentCount}</span>
+                        <span className="text-[10px] font-medium text-red-400/80 mt-0.5">Absent</span>
+                    </div>
+                    <div className="flex flex-col items-center py-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20">
+                        <span className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-none">{permCount}</span>
+                        <span className="text-[10px] font-medium text-amber-500/80 mt-0.5">Permissions</span>
                     </div>
                 </div>
 
-                <select
-                    className={`w-full px-3 py-2 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 font-medium text-indigo-900 dark:text-indigo-300 ${editRecord ? 'opacity-60 pointer-events-none' : ''}`}
-                    value={subjectId}
-                    onChange={e => setSubjectId(e.target.value)}
-                >
-                    <option value="">-- Select Subject --</option>
-                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-
-                <div className="flex gap-2">
-                    <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg flex-1">
-                        <button
-                            onClick={() => setMarkingMode('MARK_ABSENTEES')}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${markingMode === 'MARK_ABSENTEES' ? 'bg-white dark:bg-gray-700 shadow text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}
-                        >
-                            Mark Absentees
-                        </button>
-                        <button
-                            onClick={() => setMarkingMode('MARK_PRESENTEES')}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${markingMode === 'MARK_PRESENTEES' ? 'bg-white dark:bg-gray-700 shadow text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
-                        >
-                            Mark Presentees
-                        </button>
-                    </div>
-                    <Button variant="secondary" onClick={handleReset} className="h-full px-3 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400" title="Reset Selections">
-                        <RotateCcw size={18} />
-                    </Button>
+                {/* Mode Toggle */}
+                <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-xl">
+                    <button
+                        onClick={() => setMarkingMode('MARK_ABSENTEES')}
+                        className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 ${markingMode === 'MARK_ABSENTEES'
+                                ? 'bg-white dark:bg-white/10 text-red-600 dark:text-red-400 shadow-sm'
+                                : 'text-slate-400 dark:text-slate-500'
+                            }`}
+                    >
+                        Mark Absent
+                    </button>
+                    <button
+                        onClick={() => setMarkingMode('MARK_PRESENTEES')}
+                        className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 ${markingMode === 'MARK_PRESENTEES'
+                                ? 'bg-white dark:bg-white/10 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                                : 'text-slate-400 dark:text-slate-500'
+                            }`}
+                    >
+                        Mark Present
+                    </button>
                 </div>
 
+                {/* Search */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <Input
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <input
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        placeholder="Search Roll No..."
-                        className="pl-9 h-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        placeholder="Search roll number..."
+                        className="w-full pl-9 pr-9 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                     />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Scrollable List Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Scrollable Student List */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
                 {filteredStudents.length === 0 ? (
-                    <div className="text-center w-full mt-10">
-                        <p className="text-gray-400">No students found matching "{searchTerm}"</p>
+                    <div className="flex flex-col items-center justify-center py-16 gap-2 text-center">
+                        <Search size={28} className="text-slate-300 dark:text-slate-700" />
+                        <p className="text-sm text-slate-400">No students matching<br /><span className="font-medium text-slate-500">"{searchTerm}"</span></p>
                     </div>
                 ) : (
                     filteredStudents.map(student => {
@@ -309,42 +308,16 @@ export const MarkAttendance: React.FC = () => {
                         const isAbsent = status === 'ABSENT';
                         const isPresent = status === 'PRESENT';
 
-                        // Check for Permission Reason if locked
                         let permReason = '';
-
                         if (isPerm) {
-                            const activePerm = getActivePermission(
-                                permissions,
-                                student.rollNumber,
-                                date,
-                                parseInt(period)
-                            );
-
+                            const activePerm = getActivePermission(permissions, student.rollNumber, date, parseInt(period));
                             if (activePerm) {
                                 permReason = activePerm.reason;
                                 (student as any).activePermSource = activePerm.approvedBy || 'By CR';
                             }
                         }
 
-                        // Active check based on mode
-                        const isChecked = markingMode === 'MARK_ABSENTEES' ? isAbsent : isPresent;
-
-                        // Row Styling
-                        let rowClass = "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800";
-                        let statusIcon = null;
-
-                        if (isPerm) {
-                            rowClass = "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 opacity-90";
-                            statusIcon = <Lock size={16} className="text-amber-600 dark:text-amber-400" />;
-                        } else if (isChecked) {
-                            if (markingMode === 'MARK_ABSENTEES') {
-                                rowClass = "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 ring-1 ring-red-400 dark:ring-red-900";
-                                statusIcon = <div className="text-red-600 dark:text-red-300 font-bold text-xs px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded">ABSENT</div>;
-                            } else {
-                                rowClass = "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 ring-1 ring-emerald-400 dark:ring-emerald-900";
-                                statusIcon = <div className="text-emerald-600 dark:text-emerald-300 font-bold text-xs px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded">PRESENT</div>;
-                            }
-                        }
+                        const isHighlighted = (isAbsent && markingMode === 'MARK_ABSENTEES') || (isPresent && markingMode === 'MARK_PRESENTEES');
 
                         return (
                             <button
@@ -352,124 +325,219 @@ export const MarkAttendance: React.FC = () => {
                                 onClick={() => toggleStatus(student.rollNumber)}
                                 disabled={isPerm}
                                 className={`
-                                    w-full flex items-center justify-between p-4 rounded-xl border shadow-sm transition-all active:scale-[0.98]
-                                    ${rowClass}
+                                    w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-150 active:scale-[0.98] text-left
+                                    ${isPerm
+                                        ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200/60 dark:border-amber-500/20 cursor-default'
+                                        : isAbsent && markingMode === 'MARK_ABSENTEES'
+                                            ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 ring-1 ring-red-300 dark:ring-red-500/30'
+                                            : isPresent && markingMode === 'MARK_PRESENTEES'
+                                                ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 ring-1 ring-emerald-300 dark:ring-emerald-500/30'
+                                                : 'bg-white dark:bg-white/[0.03] border-slate-100 dark:border-white/[0.06] hover:border-slate-200 dark:hover:border-white/10 hover:bg-slate-50/80 dark:hover:bg-white/5'
+                                    }
                                 `}
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className={`
-                                        w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm
-                                        ${isPerm ? 'bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-100' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}
-                                    `}>
-                                        {getShortRoll(student.rollNumber)}
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="font-bold text-gray-800 dark:text-gray-200 text-lg">{student.rollNumber}</div>
-                                        {isPerm && permReason ? (
-                                            <div className="text-xs font-medium mt-0.5 flex flex-wrap items-center gap-1.5">
-                                                {(student as any).activePermSource === 'HOD' ? (
-                                                    <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-0.5 bg-emerald-50 dark:bg-emerald-900/40 px-1 rounded">
-                                                        <ShieldCheck size={10} className="fill-emerald-100" /> Approved by HOD
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-blue-700 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-900/40 px-1 rounded">CR approved</span>
-                                                )}
-                                                <span className="text-gray-400">|</span>
-                                                <span className="text-amber-700 dark:text-amber-300 italic leading-tight">"{permReason}"</span>
-                                            </div>
-                                        ) : (
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">{student.type}</div>
-                                        )}
-                                    </div>
+                                {/* Avatar */}
+                                <div className={`
+                                    w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0
+                                    ${isPerm
+                                        ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                                        : isAbsent && markingMode === 'MARK_ABSENTEES'
+                                            ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-300'
+                                            : isPresent && markingMode === 'MARK_PRESENTEES'
+                                                ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300'
+                                                : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400'
+                                    }
+                                `}>
+                                    {getShortRoll(student.rollNumber)}
                                 </div>
 
-                                <div>
-                                    {statusIcon}
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">
+                                        {student.rollNumber}
+                                    </div>
+                                    {isPerm && permReason ? (
+                                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                            {(student as any).activePermSource === 'HOD' ? (
+                                                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/20 px-1.5 py-0.5 rounded-full">
+                                                    <ShieldCheck size={9} /> HOD Approved
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-500/20 px-1.5 py-0.5 rounded-full">
+                                                    CR Approved
+                                                </span>
+                                            )}
+                                            <span className="text-[11px] text-amber-600 dark:text-amber-400 italic truncate">"{permReason}"</span>
+                                        </div>
+                                    ) : (
+                                        <div className="text-[11px] text-slate-400 mt-0.5">{student.type}</div>
+                                    )}
+                                </div>
+
+                                {/* Status Icon */}
+                                <div className="shrink-0">
+                                    {isPerm ? (
+                                        <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
+                                            <Lock size={13} className="text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                    ) : isAbsent && markingMode === 'MARK_ABSENTEES' ? (
+                                        <div className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
+                                            <XCircle size={16} className="text-red-500 dark:text-red-400" />
+                                        </div>
+                                    ) : isPresent && markingMode === 'MARK_PRESENTEES' ? (
+                                        <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+                                            <CheckCircle2 size={16} className="text-emerald-500 dark:text-emerald-400" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-7 h-7 rounded-lg border-2 border-slate-200 dark:border-white/10" />
+                                    )}
                                 </div>
                             </button>
                         );
                     })
                 )}
+                <div className="h-2" />
             </div>
 
-            {/* Fixed Bottom Button */}
-            <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                <Button
+            {/* Fixed Bottom CTA */}
+            <div className="shrink-0 px-4 py-3 bg-white dark:bg-[#111118] border-t border-slate-100 dark:border-white/5">
+                <button
                     onClick={() => setShowPreview(true)}
-                    className="w-full h-12 text-lg font-semibold shadow-lg bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl"
+                    className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-semibold text-[15px] transition-all shadow-lg shadow-violet-500/20 flex items-center justify-center gap-2"
                 >
                     Review & Save
-                </Button>
+                    <span className="text-xs font-normal bg-violet-500/50 px-2 py-0.5 rounded-full">
+                        {absentCount} absent
+                    </span>
+                </button>
             </div>
 
-            {/* Preview Modal (Same as before) */}
+            {/* Preview Modal */}
             {showPreview && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center sm:p-4">
-                    <Card className="w-full sm:max-w-md bg-white dark:bg-gray-900 shadow-2xl animate-in slide-in-from-bottom-10 sm:rounded-2xl rounded-t-2xl rounded-b-none p-0 overflow-hidden max-h-[90vh] flex flex-col">
-                        <div className="p-4 bg-indigo-600 text-white flex justify-between items-center shrink-0">
-                            <h3 className="font-bold text-lg">Confirm Attendance</h3>
-                            <button onClick={() => setShowPreview(false)} className="text-white/80 hover:text-white">
-                                <X size={20} />
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-6"
+                    onClick={e => { if (e.target === e.currentTarget) setShowPreview(false); }}
+                >
+                    <div className="w-full sm:max-w-md bg-white dark:bg-[#16161f] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[92vh]">
+
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/5">
+                            <div>
+                                <h3 className="font-bold text-slate-900 dark:text-white">Confirm Attendance</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">{date} · Period {period}</p>
+                            </div>
+                            <button
+                                onClick={() => setShowPreview(false)}
+                                className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                            >
+                                <X size={16} />
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-4 overflow-y-auto">
-                            {/* Toggle Display Count */}
-                            <div className="flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-medium text-gray-900 dark:text-white">Display Count</span>
-                                    <button
-                                        onClick={() => setShowCount(!showCount)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showCount ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}`}
-                                    >
-                                        <span
-                                            className={`${showCount ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
-                                        />
-                                    </button>
-                                </div>
+                        {/* Modal Body */}
+                        <div className="overflow-y-auto p-5 space-y-4">
 
-                                <div className="flex items-center justify-between">
-                                    <span className="font-medium text-gray-900 dark:text-white">Display Presentees</span>
-                                    <button
-                                        onClick={() => setShowPresentees(!showPresentees)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${showPresentees ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-gray-700'}`}
-                                    >
-                                        <span
-                                            className={`${showPresentees ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200`}
-                                        />
-                                    </button>
-                                </div>
+                            {/* Toggle Options */}
+                            <div className="space-y-2">
+                                <ToggleRow
+                                    label="Show Count"
+                                    description="Total present / strength"
+                                    checked={showCount}
+                                    onChange={() => setShowCount(!showCount)}
+                                    color="violet"
+                                />
+                                <ToggleRow
+                                    label="Show Presentees"
+                                    description="Switch to presentee list"
+                                    checked={showPresentees}
+                                    onChange={() => setShowPresentees(!showPresentees)}
+                                    color="emerald"
+                                />
                             </div>
 
+                            {/* Count Display */}
                             {showCount && (
-                                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800 text-center animate-in fade-in zoom-in-95 duration-200">
-                                    <p className="text-xs text-indigo-800 dark:text-indigo-200 font-medium uppercase tracking-wide mb-1">Total Present / Total Strength</p>
-                                    <p className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 font-mono">
-                                        {students.length - getAbsentees().length}/{students.length}
-                                    </p>
+                                <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20">
+                                    <div>
+                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-500">Present / Total</p>
+                                        <p className="text-2xl font-bold text-violet-700 dark:text-violet-300 font-mono mt-0.5">
+                                            {presentCount}
+                                            <span className="text-base font-normal text-violet-400">/{students.length}</span>
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-500">Rate</p>
+                                        <p className="text-2xl font-bold text-violet-700 dark:text-violet-300 font-mono mt-0.5">
+                                            {students.length > 0 ? Math.round((presentCount / students.length) * 100) : 0}%
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 
-                            <pre className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-sm font-mono text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words border border-gray-200 dark:border-gray-700">
-                                {generateSummary()}
-                            </pre>
-
-                            <div className="flex gap-2 pt-2">
-                                <Button variant="secondary" onClick={copyToClipboard} className="flex-1 text-xs h-10">
-                                    <Copy size={16} /> Copy
-                                </Button>
-                                <Button variant="secondary" onClick={shareWhatsApp} className="flex-1 text-xs h-10 text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/50">
-                                    <Share2 size={16} /> WhatsApp
-                                </Button>
+                            {/* Summary Preview */}
+                            <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden">
+                                <div className="px-4 py-2.5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Summary</span>
+                                    <span className="text-[11px] text-slate-400">{showPresentees ? 'Presentees' : 'Absentees'}</span>
+                                </div>
+                                <pre className="px-4 py-3.5 text-[13px] font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed">
+                                    {generateSummary()}
+                                </pre>
                             </div>
 
-                            <Button onClick={handleSave} className="w-full mt-2 h-12 text-lg">
-                                Save Attendance
-                            </Button>
+                            {/* Share Actions */}
+                            <div className="flex gap-2.5">
+                                <button
+                                    onClick={copyToClipboard}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    <Copy size={15} /> Copy
+                                </button>
+                                <button
+                                    onClick={shareWhatsApp}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors"
+                                >
+                                    <Share2 size={15} /> WhatsApp
+                                </button>
+                            </div>
+
+                            {/* Save */}
+                            <button
+                                onClick={handleSave}
+                                className="w-full h-12 rounded-2xl bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-semibold transition-all shadow-lg shadow-violet-500/20"
+                            >
+                                {editRecord ? 'Update Attendance' : 'Save Attendance'}
+                            </button>
                         </div>
-                    </Card>
+                    </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+// Helper: Toggle Row Component
+const ToggleRow: React.FC<{
+    label: string;
+    description: string;
+    checked: boolean;
+    onChange: () => void;
+    color: 'violet' | 'emerald';
+}> = ({ label, description, checked, onChange, color }) => {
+    const activeColor = color === 'violet' ? 'bg-violet-600' : 'bg-emerald-500';
+
+    return (
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+            <div>
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{label}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{description}</p>
+            </div>
+            <button
+                onClick={onChange}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${checked ? activeColor : 'bg-slate-200 dark:bg-white/10'}`}
+            >
+                <span className={`${checked ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200`} />
+            </button>
         </div>
     );
 };
