@@ -216,7 +216,7 @@ export const MarkAttendance: React.FC = () => {
                             className="w-full text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none"
                         >
                             {[1, 2, 3, 4, 5, 6, 7, 8].map(p => (
-                                <option key={p} value={p}>P{p}</option>
+                                <option key={p} value={p}>Period {p}</option>
                             ))}
                         </select>
                     </label>
