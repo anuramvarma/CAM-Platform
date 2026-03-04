@@ -52,7 +52,7 @@ export default function App() {
   const [reason, setReason] = useState('');
   const [criteria, setCriteria] = useState<CriteriaType>('FULL_DAY');
   const [customPeriods, setCustomPeriods] = useState<number[]>([]);
-  const [hasLetter, setHasLetter] = useState(false);
+  const [hasLetter] = useState(true);
   const [file, setFile] = useState<File | null>(null);
 
   // UI state
@@ -80,7 +80,7 @@ export default function App() {
     if (!reason.trim()) errs.reason = 'Please provide a reason';
     else if (reason.trim().length < 5) errs.reason = 'Reason is too short';
     if (criteria === 'CUSTOM' && customPeriods.length === 0) errs.periods = 'Select at least one period';
-    if (hasLetter && !file) errs.file = 'Please upload your permission letter';
+    if (!file) errs.file = 'Please upload your permission letter';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -129,7 +129,7 @@ export default function App() {
       formData.append('reason', reason.trim());
       formData.append('hasPermissionLetter', String(hasLetter));
 
-      if (file && hasLetter) {
+      if (file) {
         formData.append('letter', file);
       }
 
@@ -155,7 +155,7 @@ export default function App() {
     setRollNumber(''); setBranch(''); setSection('');
     setStartDate(today); setEndDate(today); setReason('');
     setCriteria('FULL_DAY'); setCustomPeriods([]);
-    setHasLetter(false); setFile(null);
+    setFile(null);
     setErrors({}); setSubmitError(''); setSubmitted(false);
     if (fileRef.current) fileRef.current.value = '';
   };
@@ -413,66 +413,52 @@ export default function App() {
         <div className="fade-in-up bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 space-y-4" style={{ animationDelay: '0.15s' }}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-slate-200">Permission Letter</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Do you have a permission letter?</p>
+              <h2 className="text-sm font-semibold text-slate-200">Permission Letter <span className="text-red-400">*</span></h2>
+              <p className="text-xs text-slate-500 mt-0.5">Please upload your permission letter (Required)</p>
             </div>
-            {/* Toggle Switch */}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={hasLetter}
-              onClick={() => { setHasLetter(p => !p); setFile(null); setErrors(prev => ({ ...prev, file: undefined })); if (fileRef.current) fileRef.current.value = ''; }}
-              className={`relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-violet-500/50
-                ${hasLetter ? 'bg-violet-600' : 'bg-white/10'}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300
-                ${hasLetter ? 'translate-x-6' : 'translate-x-0'}`} />
-            </button>
           </div>
 
           {/* File Upload */}
-          {hasLetter && (
-            <div className="fade-in-up">
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFileChange}
-                className="hidden"
-                id="letter-upload"
-              />
-              <label
-                htmlFor="letter-upload"
-                className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 border-dashed cursor-pointer transition-all
+          <div className="fade-in-up">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={handleFileChange}
+              className="hidden"
+              id="letter-upload"
+            />
+            <label
+              htmlFor="letter-upload"
+              className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 border-dashed cursor-pointer transition-all
                   ${errors.file ? 'border-red-500/50 bg-red-500/5' : file ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/10 bg-white/[0.02] hover:border-violet-500/30 hover:bg-violet-500/5'}`}
-              >
-                {file ? (
-                  <>
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                      <CheckIcon className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-emerald-400">{file.name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{(file.size / 1024).toFixed(0)} KB · Tap to change</p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                      </svg>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-slate-300">Tap to upload letter</p>
-                      <p className="text-xs text-slate-500 mt-0.5">PDF, JPG, JPEG, PNG · Max 15MB</p>
-                    </div>
-                  </>
-                )}
-              </label>
-              {errors.file && <p className="text-red-400 text-xs mt-1.5">{errors.file}</p>}
-            </div>
-          )}
+            >
+              {file ? (
+                <>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <CheckIcon className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-emerald-400">{file.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{(file.size / 1024).toFixed(0)} KB · Tap to change</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-slate-300">Tap to upload letter</p>
+                    <p className="text-xs text-slate-500 mt-0.5">PDF, JPG, JPEG, PNG · Max 15MB</p>
+                  </div>
+                </>
+              )}
+            </label>
+            {errors.file && <p className="text-red-400 text-xs mt-1.5">{errors.file}</p>}
+          </div>
         </div>
 
         {/* Submit Error */}
