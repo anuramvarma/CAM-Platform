@@ -29,6 +29,25 @@ export interface Permission {
     customPeriods?: number[]; // [1, 2, 3] etc.
     reason: string;
     approvedBy?: string;
+    letterFileUrl?: string | null;
+}
+
+export interface PendingPermission {
+    id: string;
+    classId: string;
+    studentRoll: string;
+    startDate: string;
+    endDate: string;
+    type: 'FULL_DAY' | 'MORNING' | 'AFTERNOON' | 'CUSTOM';
+    customPeriods?: number[];
+    reason: string;
+    hasPermissionLetter: boolean;
+    letterFileUrl?: string | null;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    reviewedBy?: string | null;
+    reviewedAt?: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface AppSettings {
@@ -40,4 +59,24 @@ export interface AppSettings {
     isApproved?: boolean;
     pin?: string;
     className?: string;
+}
+
+export interface PaymentEvent {
+    id: string;
+    eventName: string;
+    amountPerHead: number;
+    description?: string;
+    isActive: boolean;
+    paidCount: number;
+    totalCollected: number;
+    createdAt: string;
+}
+
+export interface PaymentRecord {
+    id: string;
+    eventId: string;
+    studentRoll: string;
+    isPaid: boolean;
+    paidAmount: number;
+    paidAt?: string;
 }

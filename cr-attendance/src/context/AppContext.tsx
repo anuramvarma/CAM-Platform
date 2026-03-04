@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Student, Subject, AttendanceRecord, Permission, AppSettings } from '../types';
+import { Student, Subject, AttendanceRecord, Permission, PendingPermission, AppSettings, PaymentEvent } from '../types';
 
 interface AppContextType {
     settings: AppSettings;
@@ -15,6 +15,8 @@ interface AppContextType {
     subjects: Subject[];
     permissions: Permission[];
     history: AttendanceRecord[];
+    pendingPermissions: PendingPermission[];
+    paymentEvents: PaymentEvent[];
 
     // Actions
     addSubject: (name: string, code?: string) => Promise<void>;
@@ -26,7 +28,14 @@ interface AppContextType {
     deletePermission: (id: string) => Promise<void>;
     markAttendance: (record: AttendanceRecord) => Promise<void>;
     updateAttendance: (id: string, absentees: string[]) => Promise<void>;
-
+    approvePendingPermission: (id: string) => Promise<void>;
+    rejectPendingPermission: (id: string) => Promise<void>;
+    deletePendingPermission: (id: string) => Promise<void>;
+    fetchPendingPermissions: () => Promise<void>;
+    createPaymentEvent: (data: { eventName: string; amountPerHead: number; description?: string }) => Promise<void>;
+    deletePaymentEvent: (id: string) => Promise<void>;
+    updatePaymentRecord: (recordId: string, isPaid: boolean, paidAmount: number) => Promise<void>;
+    fetchPaymentEvents: () => Promise<void>;
 
     fetchData: () => Promise<void>;
     checkApprovalStatus: () => Promise<void>;
@@ -42,6 +51,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
     const [history, setHistory] = useState<AttendanceRecord[]>([]);
+    const [pendingPermissions, setPendingPermissions] = useState<PendingPermission[]>([]);
+    const [paymentEvents, setPaymentEvents] = useState<PaymentEvent[]>([]);
 
     // Check auth on mount
     useEffect(() => {
@@ -60,17 +71,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const fetchData = async () => {
         try {
-            const [sts, subs, perms, hist, cls] = await Promise.all([
+            const [sts, subs, perms, hist, cls, pendingPerms, events] = await Promise.all([
                 api.students.getAll(),
                 api.subjects.getAll(),
                 api.permissions.getAll(),
                 api.attendance.history(),
-                api.class.get().catch(() => null)
+                api.class.get().catch(() => null),
+                api.pendingPermissions.getAll().catch(() => []),
+                api.payments.getAll().catch(() => [])
             ]);
             setStudents(sts);
             setSubjects(subs);
             setPermissions(perms);
             setHistory(hist);
+            setPendingPermissions(pendingPerms);
+            setPaymentEvents(events);
 
             if (cls) {
                 const name = `${cls.dept}-${cls.section} Attendance Tracker`;
@@ -80,6 +95,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (err) {
             console.error('Failed to load data', err);
         }
+    };
+
+    const fetchPendingPermissions = async () => {
+        try {
+            const perms = await api.pendingPermissions.getAll();
+            setPendingPermissions(perms);
+        } catch (err) {
+            console.error('Failed to load pending permissions', err);
+        }
+    };
+
+    const approvePendingPermission = async (id: string) => {
+        await api.pendingPermissions.approve(id);
+        // Refresh both lists
+        const [perms, pending] = await Promise.all([
+            api.permissions.getAll(),
+            api.pendingPermissions.getAll()
+        ]);
+        setPermissions(perms);
+        setPendingPermissions(pending);
+    };
+
+    const rejectPendingPermission = async (id: string) => {
+        await api.pendingPermissions.reject(id);
+        const pending = await api.pendingPermissions.getAll();
+        setPendingPermissions(pending);
+    };
+
+    const deletePendingPermission = async (id: string) => {
+        await api.pendingPermissions.delete(id);
+        const pending = await api.pendingPermissions.getAll();
+        setPendingPermissions(pending);
     };
 
     const checkApprovalStatus = async () => {
@@ -207,6 +254,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setStudents(sts);
     };
 
+    const fetchPaymentEvents = async () => {
+        try {
+            const events = await api.payments.getAll();
+            setPaymentEvents(events);
+        } catch (err) {
+            console.error('Failed to load payment events', err);
+        }
+    };
+
+    const createPaymentEvent = async (data: any) => {
+        await api.payments.create(data);
+        await fetchPaymentEvents();
+    };
+
+    const deletePaymentEvent = async (id: string) => {
+        await api.payments.delete(id);
+        await fetchPaymentEvents();
+    };
+
+    const updatePaymentRecord = async (recordId: string, isPaid: boolean, paidAmount: number) => {
+        await api.payments.updateRecord(recordId, { isPaid, paidAmount });
+        await fetchPaymentEvents(); // Refresh stats on events
+    };
+
     return (
         <AppContext.Provider value={{
             isAuthenticated,
@@ -219,6 +290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             subjects,
             permissions,
             history,
+            pendingPermissions,
             addSubject,
             deleteSubject,
             addStudent,
@@ -228,6 +300,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             deletePermission,
             markAttendance,
             updateAttendance,
+            approvePendingPermission,
+            rejectPendingPermission,
+            deletePendingPermission,
+            fetchPendingPermissions,
+            paymentEvents,
+            createPaymentEvent,
+            deletePaymentEvent,
+            updatePaymentRecord,
+            fetchPaymentEvents,
             fetchData,
             checkApprovalStatus
         }}>

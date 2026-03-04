@@ -18,6 +18,7 @@ import { Help } from './pages/Help';
 
 import { PendingApproval } from './components/PendingApproval';
 import { Misc } from './pages/Misc';
+import Payments from './pages/Payments';
 
 const AppRoutes = () => {
     const { settings, isAuthenticated } = useApp();
@@ -45,6 +46,7 @@ const AppRoutes = () => {
                 <Route path="/mark" element={<MarkAttendance />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/misc" element={<Misc />} />
+                <Route path="/payments" element={<Payments />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </Layout>

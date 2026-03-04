@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-    Menu, X, Home, BookOpen, Users, Calendar, Clock, LogOut, User, Moon, Sun, MoreHorizontal, HelpCircle
+    Menu, X, Home, BookOpen, Users, Calendar, Clock, LogOut, User, Moon, Sun, MoreHorizontal, HelpCircle, DollarSign
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ProfileModal } from './ProfileModal';
@@ -21,6 +21,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         { label: 'Students Info', path: '/students', icon: Users },
         { label: 'Permissions', path: '/permissions', icon: Calendar },
         { label: 'History', path: '/history', icon: Clock },
+        //{ label: 'Payments', path: '/payments', icon: DollarSign },
         { label: 'Help', path: '/help', icon: HelpCircle },
         { label: 'Misc', path: '/misc', icon: MoreHorizontal },
     ];

@@ -8,7 +8,8 @@ const permissionSchema = new mongoose.Schema({
     type: { type: String, enum: ['FULL_DAY', 'MORNING', 'AFTERNOON', 'CUSTOM'], default: 'FULL_DAY' },
     customPeriods: { type: [Number], default: [] }, // Array of period numbers e.g. [1, 2]
     reason: { type: String },
-    approvedBy: { type: String } // Optional
+    approvedBy: { type: String }, // Optional
+    letterFileUrl: { type: String, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Permission', permissionSchema);

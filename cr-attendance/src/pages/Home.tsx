@@ -2,12 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { PlusCircle, Clock, Users, BookOpen, ArrowRight, TrendingUp, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Card } from '../components/ui/Card';
 import { api } from '../services/api';
 import { AttendanceRecord } from '../types';
 
 export const Home: React.FC = () => {
-    const { students, subjects } = useApp();
+    const { students, subjects, paymentEvents } = useApp();
     const [history, setHistory] = React.useState<AttendanceRecord[]>([]);
 
     React.useEffect(() => {
@@ -17,6 +16,7 @@ export const Home: React.FC = () => {
     const totalStudents = students.length;
     const todayRaw = new Date().toISOString().split('T')[0];
     const todayCount = history.filter(h => h.date === todayRaw).length;
+    const totalCollected = paymentEvents.reduce((sum, event) => sum + (event.totalCollected || 0), 0);
 
     const now = new Date();
     const hour = now.getHours();
@@ -60,50 +60,73 @@ export const Home: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* CTA Button */}
-                        <Link
-                            to="/mark"
-                            className="group inline-flex items-center gap-2.5 px-5 py-3 bg-white hover:bg-violet-50 rounded-2xl text-violet-700 font-bold text-sm transition-all shadow-lg shadow-black/10 active:scale-[0.97]"
-                        >
-                            <div className="w-7 h-7 rounded-xl bg-violet-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <PlusCircle size={15} className="text-white" />
-                            </div>
-                            Mark Attendance
-                            <ArrowRight size={15} className="text-violet-400 group-hover:translate-x-0.5 transition-transform" />
-                        </Link>
+                        {/* CTA Buttons Row */}
+                        <div className="flex gap-3">
+                            <Link
+                                to="/mark"
+                                className="group flex-1 flex items-center gap-2 px-4 py-3 bg-white hover:bg-violet-50 rounded-2xl text-violet-700 font-bold text-sm transition-all shadow-lg active:scale-[0.97]"
+                            >
+                                <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                                    <PlusCircle size={15} className="text-white" />
+                                </div>
+                                Mark Attendance
+                                <ArrowRight size={14} className="ml-auto opacity-40" />
+                            </Link>
+
+                            {/* <Link
+                                to="/payments"
+                                className="group flex-1 flex items-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-white font-bold text-sm transition-all backdrop-blur-md active:scale-[0.97]"
+                            >
+                                <div className="w-7 h-7 rounded-lg bg-emerald-500/80 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                                    <span className="text-white text-xs font-black">₹</span>
+                                </div>
+                                Payments
+                                <ArrowRight size={14} className="ml-auto opacity-40" />
+                            </Link> */}
+                        </div>
                     </div>
                 </div>
 
-                {/* ── Stats Row ── */}
-                <div className="grid grid-cols-3 gap-3">
+                {/* ── Stats Grid ── */}
+                <div className="grid grid-cols-2 gap-3">
 
-                    <div className="flex flex-col gap-2 bg-white dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-2xl p-4">
-                        <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
-                            <Users size={15} className="text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center gap-4 bg-white dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-2xl p-4 shadow-sm">
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+                            <Users size={18} className="text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Students</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white leading-none mt-0.5">{totalStudents}</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Students</p>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white leading-none mt-0.5">{totalStudents}</p>
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 bg-white dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-2xl p-4">
-                        <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
-                            <Clock size={15} className="text-emerald-600 dark:text-emerald-400" />
+                    <div className="flex items-center gap-4 bg-white dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-2xl p-4 shadow-sm">
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center">
+                            <Clock size={18} className="text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Today</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white leading-none mt-0.5">{todayCount}</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Today</p>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white leading-none mt-0.5">{todayCount}</p>
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 bg-white dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-2xl p-4">
-                        <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
-                            <BookOpen size={15} className="text-amber-600 dark:text-amber-400" />
+                    {/* <div className="flex items-center gap-4 bg-white dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-2xl p-4 shadow-sm">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 font-bold">
+                            ₹
                         </div>
                         <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Subjects</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white leading-none mt-0.5">{subjects.length}</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Collected</p>
+                            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 leading-none mt-0.5">₹{totalCollected}</p>
+                        </div>
+                    </div> */}
+
+                    <div className="flex items-center gap-4 bg-white dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06] rounded-2xl p-4 shadow-sm">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
+                            <BookOpen size={18} className="text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Subjects</p>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white leading-none mt-0.5">{subjects.length}</p>
                         </div>
                     </div>
                 </div>

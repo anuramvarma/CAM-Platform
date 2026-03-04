@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0f0f1a;
+  min-height: 100vh;
+}
+
+/* Custom toggle switch */
+.toggle-checkbox:checked {
+  right: 0;
+  border-color: #8b5cf6;
+}
+.toggle-checkbox:checked + .toggle-label {
+  background-color: #7c3aed;
+}
+
+/* Date input styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+  cursor: pointer;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 2px;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(139,92,246,0.4); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(139,92,246,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(139,92,246,0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.35s ease-out both;
+}
+.shimmer-btn {
+  background: linear-gradient(90deg, #7c3aed 25%, #9333ea 50%, #7c3aed 75%);
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+}

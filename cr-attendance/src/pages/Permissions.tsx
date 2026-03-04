@@ -6,9 +6,10 @@ import { Card } from '../components/ui/Card';
 import {
     Trash2, Calendar, Edit2, Info, Users, Copy, RefreshCw,
     ListChecks, Type, ShieldCheck, X, Plus, ChevronRight,
-    Search, Clock, CheckCircle2
+    Search, Clock, CheckCircle2, Bell, Check, XCircle, FileText,
+    ExternalLink, Eye
 } from 'lucide-react';
-import { Permission } from '../types';
+import { Permission, PendingPermission } from '../types';
 import { useToast } from '../context/ToastContext';
 
 interface PermissionGroup {
@@ -21,7 +22,13 @@ interface PermissionGroup {
     permissions: Permission[];
     studentCount: number;
     approvedBy?: string;
+    letterFileUrl?: string | null;
 }
+
+const isImageUrl = (url: string | null | undefined) => {
+    if (!url) return false;
+    return url.match(/\.(jpeg|jpg|gif|png)$/) != null || url.startsWith('data:image');
+};
 
 const getAllowedPeriods = (type: string, customPeriods: number[] = []): number[] => {
     switch (type) {
@@ -52,10 +59,15 @@ const TypeBadge: React.FC<{ type: string; customPeriods?: number[] }> = ({ type,
 };
 
 export const Permissions: React.FC = () => {
-    const { permissions, addPermission, updatePermission, deletePermission, students, fetchData } = useApp();
+    const {
+        permissions, addPermission, updatePermission, deletePermission,
+        students, fetchData,
+        pendingPermissions, approvePendingPermission, rejectPendingPermission,
+        deletePendingPermission, fetchPendingPermissions
+    } = useApp();
     const { showToast } = useToast();
 
-    const [activeTab, setActiveTab] = useState<'CREATE' | 'VIEW'>('CREATE');
+    const [activeTab, setActiveTab] = useState<'CREATE' | 'VIEW' | 'PENDING'>('CREATE');
     const [viewingGroup, setViewingGroup] = useState<PermissionGroup | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [editingOriginals, setEditingOriginals] = useState<Permission[] | null>(null);
@@ -76,8 +88,38 @@ export const Permissions: React.FC = () => {
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
-        await fetchData();
+        await Promise.all([fetchData(), fetchPendingPermissions()]);
         setTimeout(() => setIsRefreshing(false), 500);
+    };
+
+    const handleApprovePending = async (req: PendingPermission) => {
+        try {
+            showToast('Approving request…', 'info');
+            await approvePendingPermission(req.id);
+            showToast(`Approved! Permission created for ${req.studentRoll}`, 'success');
+        } catch (err: any) {
+            showToast('Failed to approve: ' + (err.error || err.message || 'Unknown error'), 'error');
+        }
+    };
+
+    const handleRejectPending = async (req: PendingPermission) => {
+        if (!confirm(`Reject permission request from ${req.studentRoll}?`)) return;
+        try {
+            await rejectPendingPermission(req.id);
+            showToast('Request rejected', 'success');
+        } catch (err: any) {
+            showToast('Failed to reject: ' + (err.error || err.message || 'Unknown error'), 'error');
+        }
+    };
+
+    const handleDeletePending = async (id: string) => {
+        if (!confirm('Delete this request permanently?')) return;
+        try {
+            await deletePendingPermission(id);
+            showToast('Request deleted', 'success');
+        } catch (err: any) {
+            showToast('Failed to delete: ' + (err.error || err.message || 'Unknown error'), 'error');
+        }
     };
 
     useEffect(() => {
@@ -104,9 +146,9 @@ export const Permissions: React.FC = () => {
                 end.setHours(0, 0, 0, 0);
                 if (targetDate < start || targetDate > end) return;
             }
-            const key = `${perm.startDate}|${perm.endDate}|${perm.type}|${perm.reason}|${(perm.customPeriods || []).sort().join(',')}|${perm.approvedBy || 'CR'}`;
+            const key = `${perm.startDate}|${perm.endDate}|${perm.type}|${perm.reason}|${(perm.customPeriods || []).sort().join(',')}|${perm.approvedBy || 'CR'}|${perm.letterFileUrl || ''}`;
             if (!groups[key]) {
-                groups[key] = { key, reason: perm.reason, startDate: perm.startDate, endDate: perm.endDate, type: perm.type, customPeriods: perm.customPeriods || [], permissions: [], studentCount: 0, approvedBy: perm.approvedBy || 'CR' };
+                groups[key] = { key, reason: perm.reason, startDate: perm.startDate, endDate: perm.endDate, type: perm.type, customPeriods: perm.customPeriods || [], permissions: [], studentCount: 0, approvedBy: perm.approvedBy || 'CR', letterFileUrl: perm.letterFileUrl };
             }
             groups[key].permissions.push(perm);
             groups[key].studentCount++;
@@ -213,7 +255,7 @@ export const Permissions: React.FC = () => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Permissions</h1>
-                        <p className="text-xs text-slate-400 mt-0.5">{permissions.length} total active</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{permissions.length} active · {pendingPermissions.length} pending</p>
                     </div>
                     <button
                         onClick={handleRefresh}
@@ -245,10 +287,25 @@ export const Permissions: React.FC = () => {
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                     >
                         <ListChecks size={14} />
-                        Active Permissions
+                        Active
                         {permissions.length > 0 && (
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'VIEW' ? 'bg-white/20 text-white' : 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400'}`}>
                                 {permissions.length}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => { setActiveTab('PENDING'); setEditingOriginals(null); }}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold rounded-xl transition-all duration-200
+                            ${activeTab === 'PENDING'
+                                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                    >
+                        <Bell size={14} />
+                        Pending
+                        {pendingPermissions.length > 0 && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'PENDING' ? 'bg-white/20 text-white' : 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'}`}>
+                                {pendingPermissions.length}
                             </span>
                         )}
                     </button>
@@ -487,6 +544,144 @@ export const Permissions: React.FC = () => {
                 {/* ═══════════════════════════════════════════ */}
                 {/* TAB: VIEW                                   */}
                 {/* ═══════════════════════════════════════════ */}
+                {/* ═══════════════════════════════════════════ */}
+                {/* TAB: PENDING PERMISSIONS                     */}
+                {/* ═══════════════════════════════════════════ */}
+                {activeTab === 'PENDING' && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-slate-400 px-1">
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">{pendingPermissions.length}</span> request{pendingPermissions.length !== 1 ? 's' : ''} awaiting approval
+                            </p>
+                            <button
+                                onClick={fetchPendingPermissions}
+                                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 transition-colors"
+                            >
+                                <RefreshCw size={11} /> Refresh
+                            </button>
+                        </div>
+
+                        {pendingPermissions.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                                <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
+                                    <Bell size={28} className="text-amber-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">No pending requests</h3>
+                                    <p className="text-sm text-slate-400 mt-1">Students can submit requests via the permission form.</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {pendingPermissions.map(req => (
+                                    <div
+                                        key={req.id}
+                                        className="relative flex flex-col p-4 rounded-2xl border bg-white dark:bg-white/[0.03] border-amber-200 dark:border-amber-500/30 overflow-hidden"
+                                    >
+                                        {/* Accent stripe */}
+                                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-400" />
+
+                                        {/* Header */}
+                                        <div className="flex items-start justify-between gap-2 mb-3 mt-1">
+                                            <div>
+                                                <span className="font-mono text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-lg">
+                                                    {req.studentRoll}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeletePending(req.id)}
+                                                className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        </div>
+
+                                        {/* Reason */}
+                                        <h3 className="font-bold text-[14px] text-slate-900 dark:text-slate-100 mb-2 line-clamp-2">
+                                            {req.reason}
+                                        </h3>
+
+                                        {/* Badges */}
+                                        <div className="flex flex-wrap gap-1.5 mb-3">
+                                            <TypeBadge type={req.type} customPeriods={req.customPeriods} />
+                                            {req.hasPermissionLetter && req.letterFileUrl && (
+                                                <div className="mt-2 space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                                                            <FileText size={9} /> Permission Letter
+                                                        </span>
+                                                        <a
+                                                            href={req.letterFileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:underline"
+                                                        >
+                                                            <ExternalLink size={9} /> Full View
+                                                        </a>
+                                                    </div>
+
+                                                    {isImageUrl(req.letterFileUrl) ? (
+                                                        <div className="relative aspect-video rounded-xl border border-slate-100 dark:border-white/10 overflow-hidden bg-slate-50 dark:bg-white/5 group">
+                                                            <img
+                                                                src={req.letterFileUrl}
+                                                                alt="Letter Preview"
+                                                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <Eye className="text-white" size={20} />
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
+                                                            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                                                                <FileText size={16} />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Document (PDF)</p>
+                                                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate truncate">View in Drive</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Date */}
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-4">
+                                            <Calendar size={12} className="text-slate-400 shrink-0" />
+                                            <span className="font-medium">
+                                                {fmtDate(req.startDate)}
+                                                {req.startDate !== req.endDate && <span className="text-slate-400"> → {fmtDate(req.endDate)}</span>}
+                                            </span>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="grid grid-cols-2 gap-2 mt-auto">
+                                            <button
+                                                onClick={() => handleRejectPending(req)}
+                                                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs font-semibold transition-colors"
+                                            >
+                                                <XCircle size={13} /> Reject
+                                            </button>
+                                            <button
+                                                onClick={() => handleApprovePending(req)}
+                                                className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors shadow-sm shadow-emerald-500/20"
+                                            >
+                                                <Check size={13} /> Approve
+                                            </button>
+                                        </div>
+
+                                        {/* Submitted time */}
+                                        <p className="text-[10px] text-slate-400 text-center mt-2">
+                                            Submitted {new Date(req.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {activeTab === 'VIEW' && (
                     <div className="space-y-4">
                         {permissions.length === 0 ? (
@@ -701,6 +896,46 @@ export const Permissions: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Letter Section (if available) */}
+                            {viewingGroup.letterFileUrl && (
+                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Permission Letter</p>
+                                        <a
+                                            href={viewingGroup.letterFileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400"
+                                        >
+                                            <ExternalLink size={10} /> Full View
+                                        </a>
+                                    </div>
+
+                                    {isImageUrl(viewingGroup.letterFileUrl) ? (
+                                        <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200 dark:border-white/10 group">
+                                            <img
+                                                src={viewingGroup.letterFileUrl}
+                                                alt="Letter"
+                                                className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <Eye className="text-white" size={20} />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-3 p-3 bg-white dark:bg-white/5 rounded-lg border border-slate-100 dark:border-white/5">
+                                            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                                                <FileText size={16} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Document (PDF)</p>
+                                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate truncate truncate">Stored in Cloud Drive</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Modal Actions */}

@@ -7,6 +7,14 @@ const attendanceController = require('../controllers/attendanceController');
 const subjectController = require('../controllers/subjectController');
 const studentController = require('../controllers/studentController');
 const permissionController = require('../controllers/permissionController');
+const pendingPermissionController = require('../controllers/pendingPermissionController');
+const paymentController = require('../controllers/paymentController');
+
+const upload = require('../utils/upload');
+
+// ─── PUBLIC: Student submits a permission request (no auth needed) ───────────
+router.post('/pending-permissions/submit', upload.single('letter'), pendingPermissionController.submitRequest);
+router.get('/pending-permissions/lookup-class', pendingPermissionController.lookupClass);
 
 // All routes here require Authentication
 router.use(authMiddleware);
@@ -52,6 +60,19 @@ router.get('/permissions', permissionController.getPermissions);
 router.post('/permissions', permissionController.addPermission);
 router.put('/permissions/:id', permissionController.updatePermission);
 router.delete('/permissions/:id', permissionController.deletePermission);
+
+// Pending Permissions (CR review)
+router.get('/pending-permissions', pendingPermissionController.getPendingRequests);
+router.post('/pending-permissions/:id/approve', pendingPermissionController.approveRequest);
+router.post('/pending-permissions/:id/reject', pendingPermissionController.rejectRequest);
+router.delete('/pending-permissions/:id', pendingPermissionController.deleteRequest);
+
+// Payments
+router.get('/payments/events', paymentController.getEvents);
+router.post('/payments/events', paymentController.createEvent);
+router.get('/payments/events/:id/records', paymentController.getEventRecords);
+router.patch('/payments/records/:recordId', paymentController.updateRecord);
+router.delete('/payments/events/:id', paymentController.deleteEvent);
 
 // Misc (User Approvals)
 const miscController = require('../controllers/miscController');

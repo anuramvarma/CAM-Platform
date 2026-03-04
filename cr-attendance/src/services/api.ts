@@ -240,5 +240,91 @@ export const api = {
             if (!res.ok) throw await res.json();
             return await res.json();
         }
+    },
+
+    pendingPermissions: {
+        // CR: Get all pending requests for the class
+        getAll: async () => {
+            const res = await fetch(`${API_URL}/pending-permissions`, { headers: getHeaders() });
+            const data = await res.json();
+            return Array.isArray(data) ? data.map(mapId) : [];
+        },
+        // CR: Approve a request (creates active permission)
+        approve: async (id: string) => {
+            const res = await fetch(`${API_URL}/pending-permissions/${id}/approve`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        // CR: Reject a request
+        reject: async (id: string) => {
+            const res = await fetch(`${API_URL}/pending-permissions/${id}/reject`, {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        // CR: Delete a request
+        delete: async (id: string) => {
+            const res = await fetch(`${API_URL}/pending-permissions/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        // PUBLIC: Student submits a request (no auth, classId as query param)
+        submit: async (classId: string, data: any) => {
+            const res = await fetch(`${API_URL}/pending-permissions/submit?classId=${classId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        }
+    },
+
+    payments: {
+        getAll: async () => {
+            const res = await fetch(`${API_URL}/payments/events`, { headers: getHeaders() });
+            const data = await res.json();
+            return Array.isArray(data) ? data.map(mapId) : [];
+        },
+        create: async (data: any) => {
+            const res = await fetch(`${API_URL}/payments/events`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw await res.json();
+            return mapId(await res.json());
+        },
+        delete: async (id: string) => {
+            const res = await fetch(`${API_URL}/payments/events/${id}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            if (!res.ok) throw await res.json();
+            return await res.json();
+        },
+        getRecords: async (eventId: string) => {
+            const res = await fetch(`${API_URL}/payments/events/${eventId}/records`, { headers: getHeaders() });
+            const data = await res.json();
+            return Array.isArray(data) ? data.map(mapId) : [];
+        },
+        updateRecord: async (recordId: string, data: { isPaid: boolean; paidAmount: number }) => {
+            const res = await fetch(`${API_URL}/payments/records/${recordId}`, {
+                method: 'PATCH',
+                headers: getHeaders(),
+                body: JSON.stringify(data)
+            });
+            if (!res.ok) throw await res.json();
+            return mapId(await res.json());
+        }
     }
 };
+
