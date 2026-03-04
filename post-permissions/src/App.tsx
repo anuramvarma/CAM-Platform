@@ -28,7 +28,7 @@ const BRANCHES = [
   { value: 'CIVIL', label: 'CIVIL – Civil Engineering' },
 ];
 
-const SECTIONS = ['A', 'B', 'C', 'D'];
+const SECTIONS = ['C'];
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -291,7 +291,7 @@ export default function App() {
 
         {/* ── Card 2: Absence Period ── */}
         <div className="fade-in-up bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 space-y-4" style={{ animationDelay: '0.05s' }}>
-          <h2 className="text-xs font-bold text-violet-400 uppercase tracking-widest">Absence Period</h2>
+          <h2 className="text-xs font-bold text-violet-400 uppercase tracking-widest">Permission Details</h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -331,7 +331,7 @@ export default function App() {
             <textarea
               value={reason}
               onChange={e => { setReason(e.target.value); setErrors(prev => ({ ...prev, reason: undefined })); }}
-              placeholder="e.g. Medical appointment, family function, sports event…"
+              placeholder="e.g. Hackathon, Sports event, etc…"
               rows={3}
               className={`w-full px-4 py-3 rounded-xl bg-white/[0.06] border text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 transition-all resize-none
                 ${errors.reason ? 'border-red-500/50 focus:ring-red-500/30' : 'border-white/10 focus:ring-violet-500/30 focus:border-violet-500/50'}`}
