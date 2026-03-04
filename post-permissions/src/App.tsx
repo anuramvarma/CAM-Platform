@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 
 //const API_URL = 'http://localhost:5001/api';
 const API_URL = 'https://cam-platform.onrender.com/api';
-type CriteriaType = 'FULL_DAY' | 'MORNING' | 'AFTERNOON' | 'CUSTOM';
+type CriteriaType = 'FULL_DAY' | 'MORNING' | 'AFTERNOON' | 'CUSTOM' | null;
 
 interface FormErrors {
   rollNumber?: string;
@@ -13,16 +13,17 @@ interface FormErrors {
   reason?: string;
   periods?: string;
   file?: string;
+  criteria?: string;
 }
 
 const BRANCHES = [
-  { value: 'CSE', label: 'CSE – Computer Science' },
+  { value: 'CSE', label: 'CSE – Computer Science and Engineering' },
   { value: 'IT', label: 'IT – Information Technology' },
-  { value: 'CSBS', label: 'CSBS – CS & Business Systems' },
-  { value: 'AIML', label: 'AI&ML – Artificial Intelligence & ML' },
-  { value: 'AIDS', label: 'AI&DS – Artificial Intelligence & DS' },
-  { value: 'ECE', label: 'ECE – Electronics & Communication' },
-  { value: 'EEE', label: 'EEE – Electrical & Electronics' },
+  { value: 'CSBS', label: 'CSBS – Computer Science and Business Systems' },
+  { value: 'AIML', label: 'AI&ML – Artificial Intelligence and Machine Learning' },
+  { value: 'AIDS', label: 'AI&DS – Artificial Intelligence and Data Science' },
+  { value: 'ECE', label: 'ECE – Electronics and Communication Engineering' },
+  { value: 'EEE', label: 'EEE – Electrical and Electronics Engineering' },
   { value: 'MECH', label: 'MECH – Mechanical Engineering' },
   { value: 'CIVIL', label: 'CIVIL – Civil Engineering' },
 ];
@@ -50,7 +51,7 @@ export default function App() {
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [reason, setReason] = useState('');
-  const [criteria, setCriteria] = useState<CriteriaType>('FULL_DAY');
+  const [criteria, setCriteria] = useState<CriteriaType>(null);
   const [customPeriods, setCustomPeriods] = useState<number[]>([]);
   const [hasLetter] = useState(true);
   const [file, setFile] = useState<File | null>(null);
@@ -79,6 +80,7 @@ export default function App() {
     else if (endDate < startDate) errs.endDate = 'End date cannot be before start date';
     if (!reason.trim()) errs.reason = 'Please provide a reason';
     else if (reason.trim().length < 5) errs.reason = 'Reason is too short';
+    if (!criteria) errs.criteria = 'Please select absence criteria';
     if (criteria === 'CUSTOM' && customPeriods.length === 0) errs.periods = 'Select at least one period';
     if (!file) errs.file = 'Please upload your permission letter';
     setErrors(errs);
@@ -124,7 +126,7 @@ export default function App() {
       formData.append('studentRoll', rollNumber.trim().toUpperCase());
       formData.append('startDate', startDate);
       formData.append('endDate', endDate);
-      formData.append('type', criteria);
+      formData.append('type', criteria || 'FULL_DAY');
       formData.append('customPeriods', JSON.stringify(criteria === 'CUSTOM' ? customPeriods : []));
       formData.append('reason', reason.trim());
       formData.append('hasPermissionLetter', String(hasLetter));
@@ -154,7 +156,7 @@ export default function App() {
   const resetForm = () => {
     setRollNumber(''); setBranch(''); setSection('');
     setStartDate(today); setEndDate(today); setReason('');
-    setCriteria('FULL_DAY'); setCustomPeriods([]);
+    setCriteria(null); setCustomPeriods([]);
     setFile(null);
     setErrors({}); setSubmitError(''); setSubmitted(false);
     if (fileRef.current) fileRef.current.value = '';
@@ -199,8 +201,8 @@ export default function App() {
             </svg>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white leading-tight">Permission Request</h1>
-            <p className="text-xs text-slate-500">Submit your absence request to the CR</p>
+            <h1 className="text-lg font-bold text-white leading-tight">Permission Request Form</h1>
+            <p className="text-xs text-slate-500">Submit your permission request to the CR</p>
           </div>
         </div>
       </div>
@@ -340,13 +342,13 @@ export default function App() {
 
         {/* ── Card 3: Criteria ── */}
         <div className="fade-in-up bg-white/[0.04] border border-white/[0.08] rounded-2xl p-5 space-y-4" style={{ animationDelay: '0.1s' }}>
-          <h2 className="text-xs font-bold text-violet-400 uppercase tracking-widest">Absence Criteria</h2>
+          <h2 className="text-xs font-bold text-violet-400 uppercase tracking-widest">Criteria <span className="text-red-400">*</span></h2>
 
           <div className="space-y-2">
             {[
-              { value: 'FULL_DAY', label: 'Full Day', sub: 'All 8 periods', icon: '☀️' },
-              { value: 'MORNING', label: 'Morning', sub: 'Periods 1 – 4', icon: '🌅' },
-              { value: 'AFTERNOON', label: 'Afternoon', sub: 'Periods 5 – 8', icon: '🌇' },
+              { value: 'FULL_DAY', label: 'Full Day', sub: '8 periods', icon: '☀️' },
+              { value: 'MORNING', label: 'Only Morning', sub: 'Periods 1 – 4', icon: '🌅' },
+              { value: 'AFTERNOON', label: 'Only Afternoon', sub: 'Periods 5 – 8', icon: '🌇' },
               { value: 'CUSTOM', label: 'Custom Periods', sub: 'Pick specific periods', icon: '🎯' },
             ].map(opt => (
               <label
@@ -361,7 +363,7 @@ export default function App() {
                   name="criteria"
                   value={opt.value}
                   checked={criteria === opt.value}
-                  onChange={() => { setCriteria(opt.value as CriteriaType); setCustomPeriods([]); setErrors(prev => ({ ...prev, periods: undefined })); }}
+                  onChange={() => { setCriteria(opt.value as CriteriaType); setCustomPeriods([]); setErrors(prev => ({ ...prev, periods: undefined, criteria: undefined })); }}
                   className="sr-only"
                 />
                 <span className="text-lg">{opt.icon}</span>
@@ -376,6 +378,7 @@ export default function App() {
               </label>
             ))}
           </div>
+          {errors.criteria && <p className="text-red-400 text-xs mt-2">{errors.criteria}</p>}
 
           {/* Custom Period Selector */}
           {criteria === 'CUSTOM' && (
