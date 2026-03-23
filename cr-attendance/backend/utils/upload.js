@@ -3,9 +3,10 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure uploads directory exists
-const uploadDir = 'uploads';
+const uploadDir = '/tmp/uploads';
+
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+  fs.mkdirSync(uploadDir);
 }
 
 const storage = multer.diskStorage({
