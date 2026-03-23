@@ -1,5 +1,5 @@
 //const API_URL = 'http://localhost:5001/api';
-const API_URL = 'https://cam-platform.vercel.app/api';
+const API_URL = 'https://cam-platformv2.onrender.com/api';
 const getHeaders = () => {
     const token = localStorage.getItem('token');
     return {
