@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Student = require('./models/Student');
 
-const MONGO_URI = 'mongodb+srv://anuramvarma233_db_user:Anuram123456@cluster0.gv5jvjy.mongodb.net/cr_attendance_v1?retryWrites=true&w=majority';
+//const MONGO_URI = 'mongodb+srv://anuramvarma233_db_user:Anuram123456@cluster0.gv5jvjy.mongodb.net/cr_attendance_v1?retryWrites=true&w=majority';
 
 async function run() {
     try {
